@@ -1,0 +1,3 @@
+[submodule "SPA"]
+	path = SPA
+	url = https://github.com/HaoyiZhu/SPA.git
