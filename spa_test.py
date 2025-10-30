@@ -23,6 +23,7 @@ model.freeze()
 # move to CUDA if available
 if torch.cuda.is_available():
     image = image.cuda()
+    model = model.cuda()
 
 # Obtain the reshaped feature map concatenated with [CLS] token
 feature_map_cat_cls = model(
@@ -33,3 +34,7 @@ feature_map_cat_cls = model(
 feature_map_wo_cls = model(
     image, feature_map=True, cat_cls=False
 )  # torch.Size([1, 1024, 14, 14])
+
+# print the shapes of the feature maps
+print("Feature map with [CLS] token shape:", feature_map_cat_cls.shape)
+print("Feature map without [CLS] token shape:", feature_map_wo_cls.shape)
