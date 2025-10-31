@@ -1,5 +1,18 @@
-from ultralytics import SAM
+from ultralytics import ASSETS, SAM, YOLO, FastSAM
 
-model = SAM('mobile_sam.pt') 
+# Profile SAM2-t, SAM2-b, SAM-b, MobileSAM
+for file in ["sam_b.pt", "sam2_b.pt", "sam2_t.pt", "mobile_sam.pt"]:
+    model = SAM(file)
+    model.info()
+    model(ASSETS)
 
-model.predict('img_1.jpg', save=True, show=True)
+# Profile FastSAM-s
+model = FastSAM("FastSAM-s.pt")
+model.info()
+model(ASSETS)
+
+# Profile YOLO models
+for file_name in ["yolov8n-seg.pt", "yolo11n-seg.pt"]:
+    model = YOLO(file_name)
+    model.info()
+    model(ASSETS)
