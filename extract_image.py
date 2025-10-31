@@ -1,7 +1,7 @@
 import cv2
 
 video_path = "drone_video.mp4"  # replace with your actual path
-frame_number = 3492
+frame_number = 3505
 
 cap = cv2.VideoCapture(video_path)
 cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)

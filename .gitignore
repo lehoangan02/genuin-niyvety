@@ -218,3 +218,4 @@ mobile_sam.pt
 /train
 *.pt
 .DS_Store
+*.ts
