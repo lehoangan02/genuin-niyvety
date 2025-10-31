@@ -3,8 +3,8 @@ import json
 import os
 
 # ======= CONFIG =======
-submission_path = "submission.json"   # your generated result
-dataset_dir = "public_test/public_test/samples"
+submission_path = "./train/annotations/annotations.json"   # your generated result
+dataset_dir = "./train/samples"
 # =======================
 
 # Load submission JSON
