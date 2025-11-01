@@ -219,3 +219,4 @@ mobile_sam.pt
 *.pt
 .DS_Store
 *.ts
+/AnTools/DATA/public_test
