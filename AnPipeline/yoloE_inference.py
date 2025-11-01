@@ -11,12 +11,14 @@ print(f"Using device: {device}")
 # Load YOLOE segmentation model
 model = YOLOE("yoloe-11l-seg.pt").to(device)
 
-# --- Define your text prompt ---
-names = ["gray blue backpack"]
+names = ["grey blue backpack"]
 
 # MPS workaround: temporarily move model to CPU to compute text embeddings
 model_cpu = model.to("cpu")
 text_pe = model_cpu.get_text_pe(names)
+
+
+
 model.set_classes(names, text_pe)
 model = model.to(device)
 # -------------------------------
