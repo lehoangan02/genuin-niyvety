@@ -215,3 +215,6 @@ __marimo__/
 /public_test
 mobile_sam.pt
 /DATA/samples
+/DATA/frames
+/DATA/images
+DATA/frame_labels.txt
