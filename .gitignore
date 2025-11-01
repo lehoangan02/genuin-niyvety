@@ -220,3 +220,4 @@ mobile_sam.pt
 .DS_Store
 *.ts
 /AnTools/DATA/public_test
+/AnTools/DATA/train
