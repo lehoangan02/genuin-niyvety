@@ -218,3 +218,10 @@ mobile_sam.pt
 /DATA/frames
 /DATA/images
 DATA/frame_labels.txt
+/runs
+/train
+*.pt
+.DS_Store
+*.ts
+/AnTools/DATA/public_test
+/AnTools/DATA/train
