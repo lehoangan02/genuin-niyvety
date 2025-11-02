@@ -40,15 +40,16 @@ class LossAll(nn.Module):
     Loss wrapper that matches your model output layout for CombinedModelV3:
 
     Channel 0 -> confidence (BCEWithLogits)
-    Channels 1-2 -> center offsets (Focal loss on heatmaps)
-    Channels 3-4 -> width/height (Smooth L1 on regression)
+    Channels 1-2 -> center (relative x, y)
+    Channels 3-4 -> width/height (relative w, h)
 
     The forward() expects:
       preds: tensor [B, 5, H, W]
-      gts:   tensor [B, 5, H, W]   (same layout as preds)
-    and returns a single scalar tensor (total loss) so it can be used directly in:
-      loss = criterion(preds, gts)
-      loss.backward()
+      targets: list of dictionaries, one per batch item
+               [{'boxes': tensor, 'labels': tensor}, ...]
+      frame_tensor: tensor [B, 3, H_frame, W_frame] (for scaling)
+      
+    and returns a single scalar tensor (total loss).
     """
 
     def __init__(self,
@@ -58,63 +59,118 @@ class LossAll(nn.Module):
                  lambda_center=1.0,
                  lambda_wh=1.0):
         super(LossAll, self).__init__()
+        # Use FocalLoss for confidence/objectness map
         self.focal = FocalLoss(alpha=focal_alpha, beta=focal_beta)
-        self.smooth_l1 = nn.SmoothL1Loss(reduction='mean')
-        self.bce_logits = nn.BCEWithLogitsLoss(reduction='mean')
+        
+        # Use SmoothL1 for the regression targets (center, w, h)
+        # Note: We will apply this only at the positive locations
+        self.smooth_l1 = nn.SmoothL1Loss(reduction='sum') 
+        
         self.lambda_conf = lambda_conf
         self.lambda_center = lambda_center
         self.lambda_wh = lambda_wh
 
-    def forward(self, preds, gts):
+    def forward(self, preds, targets, frame_tensor):
         """
-        preds: [B, 5, H, W]
-        gts:   [B, 5, H, W]
+        preds: [B, 5, H, W] (logits for conf, raw regression for box)
+        targets: list of dicts (len B)
+        frame_tensor: [B, C, H_frame, W_frame]
         Returns: scalar tensor (total loss)
         """
-        if isinstance(preds, dict):
-            # support old-style dict inputs (if some parts of your code still produce dict)
-            # expecting key 'out' or 'pred' to contain the tensor — prefer direct tensor input though
-            # fallback: try to extract main output
-            if 'out' in preds:
-                preds = preds['out']
-            else:
-                # try first tensor-like value
-                for v in preds.values():
-                    if torch.is_tensor(v):
-                        preds = v
-                        break
+        
+        # --- 1. Build Ground Truth Tensor ---
+        
+        B, C_pred, H, W = preds.shape
+        _, _, frame_H, frame_W = frame_tensor.shape
 
-        # ensure tensors
-        assert torch.is_tensor(preds), "preds must be a tensor [B,5,H,W]"
-        assert torch.is_tensor(gts), "gts must be a tensor [B,5,H,W]"
+        # Create the empty ground truth tensor
+        gt_tensor = torch.zeros(B, 5, H, W, device=preds.device)
+        # Create a mask for where the regression loss should be applied
+        reg_mask = torch.zeros(B, 1, H, W, device=preds.device, dtype=torch.bool)
+
+        num_pos = 0.0
+
+        for b in range(B):
+            target_boxes = targets[b]['boxes'] # Shape: [num_boxes, 4]
+            
+            for i in range(target_boxes.shape[0]):
+                box = target_boxes[i]
+                x1, y1, x2, y2 = box
+                
+                x_center_rel = ((x1 + x2) / 2) / frame_W
+                y_center_rel = ((y1 + y2) / 2) / frame_H
+                width_rel = (x2 - x1) / frame_W
+                height_rel = (y2 - y1) / frame_H
+                
+                cx_feat = x_center_rel * W
+                cy_feat = y_center_rel * H
+                
+                cx_int = int(cx_feat)
+                cy_int = int(cy_feat)
+                
+                cx_int = max(0, min(cx_int, W - 1))
+                cy_int = max(0, min(cy_int, H - 1))
+
+                # Set the confidence score for this cell to 1
+                gt_tensor[b, 0, cy_int, cx_int] = 1.0
+                
+                # Set the regression targets
+                gt_tensor[b, 1, cy_int, cx_int] = x_center_rel
+                gt_tensor[b, 2, cy_int, cx_int] = y_center_rel
+                gt_tensor[b, 3, cy_int, cx_int] = width_rel
+                gt_tensor[b, 4, cy_int, cx_int] = height_rel
+                
+                # Mark this location for regression loss
+                reg_mask[b, 0, cy_int, cx_int] = True
+                num_pos += 1.0
+
+        # --- 2. Calculate Losses ---
 
         # split channels
-        conf_pred = preds[:, 0, :, :]        # logits for confidence
-        center_pred = preds[:, 1:3, :, :]    # logits (we apply focal)
-        wh_pred = preds[:, 3:5, :, :]        # regression for w,h
+        conf_pred = preds[:, 0:1, :, :]      # [B, 1, H, W] (keep dim for focal)
+        center_pred = preds[:, 1:3, :, :]    # [B, 2, H, W]
+        wh_pred = preds[:, 3:5, :, :]        # [B, 2, H, W]
 
-        conf_gt = gts[:, 0, :, :].float()
-        center_gt = gts[:, 1:3, :, :].float()
-        wh_gt = gts[:, 3:5, :, :].float()
+        conf_gt = gt_tensor[:, 0:1, :, :]    # [B, 1, H, W]
+        center_gt = gt_tensor[:, 1:3, :, :]  # [B, 2, H, W]
+        wh_gt = gt_tensor[:, 3:5, :, :]      # [B, 2, H, W]
 
-        # confidence: BCEWithLogits
-        loss_conf = self.bce_logits(conf_pred, conf_gt)
+        # Confidence: Focal loss on the confidence map
+        # focal expects logits, so we pass conf_pred directly
+        loss_conf = self.focal(conf_pred, conf_gt)
 
-        # center: apply focal per-channel and average
-        # focal expects pred logits and gt in [0,1]
-        # center_gt might be heatmaps with {0,1}. If your center channels are offsets
-        # instead of heatmaps, you must adapt — this assumes heatmap-like gt.
-        # Apply focal separately per channel and average
-        loss_center_ch0 = self.focal(center_pred[:, 0, :, :], center_gt[:, 0, :, :])
-        loss_center_ch1 = self.focal(center_pred[:, 1, :, :], center_gt[:, 1, :, :])
-        loss_center = 0.5 * (loss_center_ch0 + loss_center_ch1)
+        # Expand the regression mask to match channel dimensions
+        # reg_mask [B, 1, H, W] -> [B, 2, H, W]
+        center_mask = reg_mask.expand_as(center_pred)
+        wh_mask = reg_mask.expand_as(wh_pred)
 
-        # width/height: Smooth L1 on the regression channels
-        # Only compute where you have valid gt (optional). If you supply a mask, incorporate it here.
-        loss_wh = self.smooth_l1(wh_pred, wh_gt)
+        # Filter predictions and gts just for the positive locations
+        center_pred_pos = center_pred[center_mask]
+        center_gt_pos = center_gt[center_mask]
+        
+        wh_pred_pos = wh_pred[wh_mask]
+        wh_gt_pos = wh_gt[wh_mask]
 
+        # Center & WH: Smooth L1 on the regression channels,
+        # only at positive locations.
+        
+        # Normalize by number of positive boxes
+        num_pos = max(1.0, num_pos) 
+
+        loss_center = self.smooth_l1(center_pred_pos, center_gt_pos) / num_pos
+        loss_wh = self.smooth_l1(wh_pred_pos, wh_gt_pos) / num_pos
+        
+        # --- 3. Combine Losses ---
         total_loss = (self.lambda_conf * loss_conf +
                       self.lambda_center * loss_center +
                       self.lambda_wh * loss_wh)
-
+        
+        # For debugging, you could return a dict:
+        # return {
+        #     "total": total_loss,
+        #     "conf": loss_conf,
+        #     "center": loss_center,
+        #     "wh": loss_wh
+        # }
+        
         return total_loss

@@ -158,64 +158,10 @@ class TrainModule(object):
                 # This assumes your CombinedModelV3's forward pass is: forward(self, query, frame)
                 preds = self.model(query_tensor, frame_tensor)
                 
-                # --- START: FIX FOR LossAll ASSERTION ERROR ---
-                # The LossAll class expects a [B, 5, H, W] ground truth tensor,
-                # not a list of dicts. We must build it from the targets list.
-                
-                B, C_pred, H, W = preds.shape
-                
-                # We need the original frame shape to scale the boxes.
-                # All frames are stacked, so they have the same shape.
-                _, _, frame_H, frame_W = frame_tensor.shape
+                # --- REMOVED: All the gt_tensor creation logic ---
 
-                # Create the empty ground truth tensor
-                gt_tensor = torch.zeros(B, 5, H, W, device=self.device)
-
-                # Populate the gt_tensor
-                for b in range(B):
-                    target_boxes = targets[b]['boxes'] # Shape: [num_boxes, 4]
-                    
-                    for i in range(target_boxes.shape[0]):
-                        # Boxes are [x1, y1, x2, y2] in absolute pixel coords
-                        box = target_boxes[i]
-                        x1, y1, x2, y2 = box
-                        
-                        # Calculate center, width, height in *relative* coords (0.0 to 1.0)
-                        # (relative to the full-size frame image)
-                        x_center_rel = ((x1 + x2) / 2) / frame_W
-                        y_center_rel = ((y1 + y2) / 2) / frame_H
-                        width_rel = (x2 - x1) / frame_W
-                        height_rel = (y2 - y1) / frame_H
-                        
-                        # Scale center coords to the *output feature map* grid
-                        cx_feat = x_center_rel * W
-                        cy_feat = y_center_rel * H
-                        
-                        # Get the integer grid cell this box's center falls into
-                        cx_int = int(cx_feat)
-                        cy_int = int(cy_feat)
-                        
-                        # Clamp to be within feature map bounds
-                        cx_int = max(0, min(cx_int, W - 1))
-                        cy_int = max(0, min(cy_int, H - 1))
-
-                        # Set the confidence score for this cell to 1
-                        # This assumes channel 0 is the objectness/score map
-                        gt_tensor[b, 0, cy_int, cx_int] = 1.0
-                        
-                        # Set the regression targets
-                        # This assumes channels 1-4 are the box representation.
-                        # We store [x_center_rel, y_center_rel, width_rel, height_rel]
-                        # Your loss function must be designed to interpret this format.
-                        gt_tensor[b, 1, cy_int, cx_int] = x_center_rel
-                        gt_tensor[b, 2, cy_int, cx_int] = y_center_rel
-                        gt_tensor[b, 3, cy_int, cx_int] = width_rel
-                        gt_tensor[b, 4, cy_int, cx_int] = height_rel
-                
-                # --- END: FIX ---
-
-                # CHANGED: Loss call now passes the newly created gt_tensor
-                loss = criterion(preds, gt_tensor)
+                # CHANGED: Loss call now passes preds, targets, AND frame_tensor
+                loss = criterion(preds, targets, frame_tensor)
                 
                 if isinstance(loss, dict):
                     # Handle if criterion returns a dict of losses
@@ -231,4 +177,5 @@ class TrainModule(object):
         epoch_loss = running_loss / len(loader)
         print(f"Train loss: {epoch_loss:.6f}")
         return epoch_loss
+
 

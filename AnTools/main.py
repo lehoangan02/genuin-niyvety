@@ -64,7 +64,8 @@ if __name__ == "__main__":
         dataset=train_dataset,
         batch_size=batch_size,
         shuffle=True,
-        collate_fn=custom_collate_fn
+        collate_fn=custom_collate_fn,
+        num_workers=args.num_workers
     )
     decoder = DecoderV1()
 
