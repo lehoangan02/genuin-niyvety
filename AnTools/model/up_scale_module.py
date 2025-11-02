@@ -1,8 +1,8 @@
 import torch.nn.functional as F
-import torch as nn
+import torch.nn as nn
 import torch
 
-class NoPromptCombinationModule(nn.Module):
+class NoPromptUpScaleModule(nn.Module):
     def __init__(self, c_in, c_out):
         super().__init__()
         self.conv1 = nn.Sequential(nn.Conv2d(c_in, c_out, kernel_size=3, padding=1, stride=1),

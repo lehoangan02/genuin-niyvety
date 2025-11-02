@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import torch
 from dataset import FewShotDetDataset, custom_collate_fn
 from model import CombinedModelV1
@@ -54,6 +59,9 @@ model.eval() # Set to eval mode since we froze the encoders
 # --- 5. Run One Batch ---
 # Get a single batch from the loader to test
 query_batch, frame_batch, target_list = next(iter(train_loader))
+# Print input shapes
+print(f"Query Batch Shape: {query_batch.shape}")  # Expected: [B, 3, 3, H, W]
+print(f"Frame Batch Shape: {frame_batch.shape}")  # Expected: [B, 3, H, W]
 
 # Move data to device
 query_batch = query_batch.to(device)
