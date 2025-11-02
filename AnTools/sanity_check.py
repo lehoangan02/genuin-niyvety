@@ -1,6 +1,6 @@
 import torch
 from dataset import FewShotDetDataset, custom_collate_fn
-from model import CombinedModel
+from model import CombinedModelV1
 from transformers import CLIPProcessor
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
@@ -48,7 +48,7 @@ train_loader = DataLoader(
 )
 
 # --- 4. Initialize Model ---
-model = CombinedModel().to(device)
+model = CombinedModelV1().to(device)
 model.eval() # Set to eval mode since we froze the encoders
 
 # --- 5. Run One Batch ---
