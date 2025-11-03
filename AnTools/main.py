@@ -7,6 +7,7 @@ from transformers import CLIPProcessor
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 from model import DecoderV1
+import encoder as encoder
 import torch
 
 def parse_args():
@@ -79,9 +80,9 @@ if __name__ == "__main__":
         pass
     elif args.phase == 'encode':
         if args.encoder == 'clip-vit-base-patch32':
-            clip_model_id = "openai/clip-vit-base-patch32"
-            processor = CLIPProcessor.from_pretrained(clip_model_id)
-            clip_image_processor = processor.image_processor
+            encoder_model = encoder.ViTClipEncoder(model_id="openai/clip-vit-base-patch32")
+        elif args.encoder == 'mobile-clip':
+            encoder_model = encoder.MobileClipEncoder(model_id="laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
             
     else: 
         print(f"Phase '{args.phase}' not implemented yet.")
