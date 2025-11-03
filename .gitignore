@@ -227,3 +227,4 @@ DATA/frame_labels.txt
 /AnTools/DATA/train
 *.pth
 *.npy
+/spa_env
