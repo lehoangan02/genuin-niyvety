@@ -6,7 +6,8 @@ from mobileclip.modules.common.mobileone import reparameterize_model
 
 class MobileClipBLTEncoder:
     def __init__(self):
-        model_name="MobileCLIP-B", pretrained="datacompdr_lt"
+        model_name="MobileCLIP-B"
+        pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {self.device}")
         print(f"Loading {model_name} ({pretrained}) ...")
@@ -48,7 +49,8 @@ class MobileClipBLTEncoder:
         return text_features / text_features.norm(p=2, keepdim=True)
 class MobileClipEncoder:
     def __init__(self):
-        model_name="MobileCLIP-B", pretrained="datacompdr_lt"
+        model_name="MobileCLIP-B"
+        pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {self.device}")
         print(f"Loading {model_name} ({pretrained}) ...")
@@ -93,6 +95,8 @@ class ViTClipEncoder:
         self.model = CLIPModel.from_pretrained(model_id)
         # CLIPProcessor handles all the pre-processing (resizing, cropping, tokenizing)
         self.processor = CLIPProcessor.from_pretrained(model_id)
+        self.model.to(self.device)
+        self.model.eval()
         print("Model and processor loaded.")
     
     def embedImage(self, image: Image.Image) -> torch.Tensor:

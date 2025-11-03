@@ -226,3 +226,5 @@ DATA/frame_labels.txt
 /AnTools/DATA/public_test
 /AnTools/DATA/train
 *.pth
+*.npy
+/spa_env
