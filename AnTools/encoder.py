@@ -1,11 +1,13 @@
 import torch
 from PIL import Image
-import open_clip
-from transformers import CLIPProcessor, CLIPModel
-from mobileclip.modules.common.mobileone import reparameterize_model
+
+
+
 
 class MobileClipBLTEncoder:
     def __init__(self):
+        import open_clip
+        from mobileclip.modules.common.mobileone import reparameterize_model
         model_name="MobileCLIP-B"
         pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
@@ -49,6 +51,7 @@ class MobileClipBLTEncoder:
         return text_features / text_features.norm(p=2, keepdim=True)
 class MobileClipEncoder:
     def __init__(self):
+        import open_clip
         model_name="MobileCLIP-B"
         pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
@@ -85,6 +88,7 @@ class MobileClipEncoder:
         return text_features / text_features.norm(p=2, keepdim=True)
 class ViTClipEncoder:
     def __init__(self):
+        from transformers import CLIPProcessor, CLIPModel
         model_id: str = "openai/clip-vit-base-patch32"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using device: {self.device}")
@@ -120,6 +124,12 @@ class ViTClipEncoder:
         text_embedding = self.embedText(text)
         text_embedding = text_embedding / text_embedding.norm(p=2, dim=-1, keepdim=True)
         return text_embedding
+class SPAEncoder:
+    def __init__(self):
+        from spa_encoder import spa_encoder_impl
+        self.model = spa_encoder_impl()
+    def embedImageNormalized(self, image: Image.Image):
+        return self.model.embedImage(image)
 if __name__ == "__main__":
     encoder = ViTClipEncoder()
 

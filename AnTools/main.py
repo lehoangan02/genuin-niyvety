@@ -1,14 +1,5 @@
 import argparse
-from model.combined_model import CombinedModelV3
-from train import TrainModule
-from dataset import FewShotDetDataset, custom_collate_fn
-from model import CombinedModelV3
-from transformers import CLIPProcessor
-from torch.utils.data import DataLoader
-import torchvision.transforms as T
-from model import DecoderV1
-import encoder as encoder
-import torch
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='banpath model')
@@ -19,72 +10,81 @@ def parse_args():
     parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
-    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT}')
+    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT, SPA}')
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    model = CombinedModelV3() 
-
-    # --- 1. Define Device ---
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-
-    # --- 2. Define Transforms ---
-
-    # Get the *exact* preprocessing for CLIP
-    clip_model_id = "openai/clip-vit-base-patch32"
-    processor = CLIPProcessor.from_pretrained(clip_model_id)
-    clip_image_processor = processor.image_processor
-
-    # Transform for the 3 QUERY images (must match CLIP)
-    query_transform = T.Compose([
-        T.Resize((clip_image_processor.crop_size['height'], clip_image_processor.crop_size['width'])),
-        T.ToTensor(),
-        T.Normalize(mean=clip_image_processor.image_mean, std=clip_image_processor.image_std)
-    ])
-
-    # Transform for the FRAME image (No resize, just normalize)
-    # Using standard ImageNet mean/std for the timm model
-    frame_transform = T.Compose([
-        T.ToTensor(),
-        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-    # --- 3. Create Dataset and DataLoader ---
-    data_root = './../DATA' # Point this to your DATA folder
-    batch_size = 8
-
-    train_dataset = FewShotDetDataset(
-        data_root_dir=data_root,
-        query_transform=query_transform,
-        frame_transform=frame_transform
-    )
-
-    train_loader = DataLoader(
-        dataset=train_dataset,
-        batch_size=batch_size,
-        shuffle=True,
-        collate_fn=custom_collate_fn,
-        num_workers=args.num_workers
-    )
-    decoder = DecoderV1()
-
     if args.phase == 'train':
-        # NOW pass the train_loader and the decoder
+        from model.combined_model import CombinedModelV3
+        from train import TrainModule
+        from dataset import FewShotDetDataset, custom_collate_fn
+        from model import CombinedModelV3
+        from transformers import CLIPProcessor
+        from torch.utils.data import DataLoader
+        import torchvision.transforms as T
+        from model import DecoderV1
+        import torch
+        model = CombinedModelV3() 
+        # --- 1. Define Device ---
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Using device: {device}")
+
+        # --- 2. Define Transforms ---
+
+        # Get the *exact* preprocessing for CLIP
+        clip_model_id = "openai/clip-vit-base-patch32"
+        processor = CLIPProcessor.from_pretrained(clip_model_id)
+        clip_image_processor = processor.image_processor
+
+        # Transform for the 3 QUERY images (must match CLIP)
+        query_transform = T.Compose([
+            T.Resize((clip_image_processor.crop_size['height'], clip_image_processor.crop_size['width'])),
+            T.ToTensor(),
+            T.Normalize(mean=clip_image_processor.image_mean, std=clip_image_processor.image_std)
+        ])
+
+        # Transform for the FRAME image (No resize, just normalize)
+        # Using standard ImageNet mean/std for the timm model
+        frame_transform = T.Compose([
+            T.ToTensor(),
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+        # --- 3. Create Dataset and DataLoader ---
+        data_root = './../DATA' # Point this to your DATA folder
+        batch_size = 8
+
+        train_dataset = FewShotDetDataset(
+            data_root_dir=data_root,
+            query_transform=query_transform,
+            frame_transform=frame_transform
+        )
+
+        train_loader = DataLoader(
+            dataset=train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=custom_collate_fn,
+            num_workers=args.num_workers
+        )
+        decoder = DecoderV1()
         trainer = TrainModule(train_loader, model, decoder=decoder) 
         trainer.train_network(args) 
     elif args.phase == 'test':
         # Testing code to be implemented
         pass
     elif args.phase == 'encode':
+        import encoder as encoder
         if args.encoder == 'clip-vit-base-patch32':
             encoder_model = encoder.ViTClipEncoder()
         elif args.encoder == 'mobile-clip-B':
             encoder_model = encoder.MobileClipEncoder()
         elif args.encoder == 'mobile-clip-BLT':
             encoder_model = encoder.MobileClipBLTEncoder()
+        elif args.encoder == 'SPA':
+            encoder_model = encoder.SPAEncoder()
         
         # embed all iamges in the dataroot + /images folder and save the embeddings to DATA/embeddings+{encoder}
         import os
@@ -97,9 +97,48 @@ if __name__ == "__main__":
             if img_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
                 img_path = os.path.join(image_dir, img_filename)
                 image = Image.open(img_path).convert('RGB')
-                embedding = encoder_model.embedImageNormalized(image)  # Get normalized embedding
-                embedding_np = embedding.squeeze(1).cpu().numpy()  # Convert to numpy array
-                embedding_path = os.path.join(embedding_dir, f"{os.path.splitext(img_filename)[0]}_embedding.npy")
+                # print image filename and size
+                print(f"Processing image: {img_filename}, size: {image.size}")
+                base_filename = os.path.splitext(img_filename)[0]
+            
+            if isinstance(encoder_model, encoder.SPAEncoder):
+                # SPAEncoder returns a tuple of 2 feature maps
+                emb_cat_cls, emb_wo_cls = encoder_model.embedImageNormalized(image)
+                
+                # --- 1. Define the two sub-folders ---
+                emb1_dir = os.path.join(embedding_dir, "spa_cat_cls")
+                emb2_dir = os.path.join(embedding_dir, "spa_wo_cls")
+
+                # --- 2. Create these directories if they don't exist ---
+                os.makedirs(emb1_dir, exist_ok=True)
+                os.makedirs(emb2_dir, exist_ok=True)
+
+                # --- 3. Define the common filename ---
+                common_filename = f"{base_filename}_embedding.npy"
+
+                # --- 4. Define the full paths ---
+                emb1_path = os.path.join(emb1_dir, common_filename)
+                emb2_path = os.path.join(emb2_dir, common_filename)
+
+                # Squeeze the batch dimension (dim 0) to get [C, H, W]
+                emb1_np = emb_cat_cls.squeeze(0).cpu().numpy()
+                emb2_np = emb_wo_cls.squeeze(0).cpu().numpy()
+                
+                # --- 5. Save to the new paths ---
+                np.save(emb1_path, emb1_np)
+                np.save(emb2_path, emb2_np)
+                
+                print(f"Saved SPA embeddings for {img_filename} to {emb1_dir} and {emb2_dir}")
+
+            else:
+                # Other encoders (ViTClipEncoder, etc.)
+                embedding = encoder_model.embedImageNormalized(image)
+                
+                # Squeeze dim 1 to get [B, D]
+                embedding_np = embedding.squeeze(1).cpu().numpy()
+                
+                # Save directly into the main embedding_dir
+                embedding_path = os.path.join(embedding_dir, f"{base_filename}_embedding.npy")
                 np.save(embedding_path, embedding_np)
                 print(f"Saved embedding for {img_filename} to {embedding_path}")
         
