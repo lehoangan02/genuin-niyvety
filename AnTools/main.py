@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
-    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-B(LT)}')
+    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT}')
     return parser.parse_args()
 
 
@@ -80,13 +80,13 @@ if __name__ == "__main__":
         pass
     elif args.phase == 'encode':
         if args.encoder == 'clip-vit-base-patch32':
-            encoder_model = encoder.ViTClipEncoder(model_id="openai/clip-vit-base-patch32")
+            encoder_model = encoder.ViTClipEncoder()
         elif args.encoder == 'mobile-clip-B':
             encoder_model = encoder.MobileClipEncoder()
-        elif args.encoder == 'mobile-clip-B(LT)':
+        elif args.encoder == 'mobile-clip-BLT':
             encoder_model = encoder.MobileClipBLTEncoder()
         
-        # embed all iamges in the DATA/images folder and save the embeddings to DATA/embeddings+{encoder}
+        # embed all iamges in the dataroot + /images folder and save the embeddings to DATA/embeddings+{encoder}
         import os
         from PIL import Image
         import numpy as np
