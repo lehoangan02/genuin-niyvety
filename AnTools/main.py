@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
-    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip}')
+    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-B(LT)}')
     return parser.parse_args()
 
 
@@ -81,8 +81,28 @@ if __name__ == "__main__":
     elif args.phase == 'encode':
         if args.encoder == 'clip-vit-base-patch32':
             encoder_model = encoder.ViTClipEncoder(model_id="openai/clip-vit-base-patch32")
-        elif args.encoder == 'mobile-clip':
-            encoder_model = encoder.MobileClipEncoder(model_id="laion/CLIP-ViT-H-14-laion2B-s32B-b79K")
+        elif args.encoder == 'mobile-clip-B':
+            encoder_model = encoder.MobileClipEncoder()
+        elif args.encoder == 'mobile-clip-B(LT)':
+            encoder_model = encoder.MobileClipBLTEncoder()
+        
+        # embed all iamges in the DATA/images folder and save the embeddings to DATA/embeddings+{encoder}
+        import os
+        from PIL import Image
+        import numpy as np
+        image_dir = os.path.join(args.data_dir, 'images')
+        embedding_dir = os.path.join(args.data_dir, f'embeddings_{args.encoder}')
+        os.makedirs(embedding_dir, exist_ok=True)
+        for img_filename in os.listdir(image_dir):
+            if img_filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif')):
+                img_path = os.path.join(image_dir, img_filename)
+                image = Image.open(img_path).convert('RGB')
+                embedding = encoder_model.embedImageNormalized(image)  # Get normalized embedding
+                embedding_np = embedding.squeeze(1).cpu().numpy()  # Convert to numpy array
+                embedding_path = os.path.join(embedding_dir, f"{os.path.splitext(img_filename)[0]}_embedding.npy")
+                np.save(embedding_path, embedding_np)
+                print(f"Saved embedding for {img_filename} to {embedding_path}")
+        
             
     else: 
         print(f"Phase '{args.phase}' not implemented yet.")

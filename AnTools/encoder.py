@@ -5,7 +5,8 @@ from transformers import CLIPProcessor, CLIPModel
 from mobileclip.modules.common.mobileone import reparameterize_model
 
 class MobileClipBLTEncoder:
-    def __init__(self, model_name="MobileCLIP-B", pretrained="datacompdr_lt"):
+    def __init__(self):
+        model_name="MobileCLIP-B", pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {self.device}")
         print(f"Loading {model_name} ({pretrained}) ...")
@@ -46,7 +47,8 @@ class MobileClipBLTEncoder:
         text_features = self.embedText(text)
         return text_features / text_features.norm(p=2, keepdim=True)
 class MobileClipEncoder:
-    def __init__(self, model_name="MobileCLIP-B", pretrained="datacompdr_lt"):
+    def __init__(self):
+        model_name="MobileCLIP-B", pretrained="datacompdr_lt"
         self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {self.device}")
         print(f"Loading {model_name} ({pretrained}) ...")
@@ -80,7 +82,8 @@ class MobileClipEncoder:
         text_features = self.embedText(text)
         return text_features / text_features.norm(p=2, keepdim=True)
 class ViTClipEncoder:
-    def __init__(self, model_id: str = "openai/clip-vit-base-patch32"):
+    def __init__(self):
+        model_id: str = "openai/clip-vit-base-patch32"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using device: {self.device}")
         # List of model id:
@@ -114,7 +117,7 @@ class ViTClipEncoder:
         text_embedding = text_embedding / text_embedding.norm(p=2, dim=-1, keepdim=True)
         return text_embedding
 if __name__ == "__main__":
-    encoder = MobileClipBLTEncoder()
+    encoder = ViTClipEncoder()
 
     image_path = "frame.jpg"
     text_prompt = "gray blue backpack"
