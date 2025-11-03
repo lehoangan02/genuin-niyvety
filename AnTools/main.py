@@ -16,8 +16,9 @@ def parse_args():
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--init_lr', type=float, default=1e-4, help='Initial learning rate')
     parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
-    parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, eval}')
+    parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
+    parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip}')
     return parser.parse_args()
 
 
@@ -73,6 +74,15 @@ if __name__ == "__main__":
         # NOW pass the train_loader and the decoder
         trainer = TrainModule(train_loader, model, decoder=decoder) 
         trainer.train_network(args) 
+    elif args.phase == 'test':
+        # Testing code to be implemented
+        pass
+    elif args.phase == 'encode':
+        if args.encoder == 'clip-vit-base-patch32':
+            clip_model_id = "openai/clip-vit-base-patch32"
+            processor = CLIPProcessor.from_pretrained(clip_model_id)
+            clip_image_processor = processor.image_processor
+            
     else: 
         print(f"Phase '{args.phase}' not implemented yet.")
 

@@ -225,3 +225,4 @@ DATA/frame_labels.txt
 *.ts
 /AnTools/DATA/public_test
 /AnTools/DATA/train
+*.pth
