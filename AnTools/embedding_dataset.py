@@ -56,7 +56,7 @@ class EmbeddingDetDataset(Dataset):
             frame_image = self.frame_transform(frame_image)
 
         # Stack the 3 query embeddings to build (num_queries, embedding_dim)
-        query_tensor = torch.stack(query_embeddings)
+        query_tensor = torch.concat(query_embeddings)
 
         # Format the target
         target = {}

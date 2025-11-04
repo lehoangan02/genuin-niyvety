@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import timm
 from transformers import CLIPModel
-from up_scale_module import NoPromptUpScaleModule
+from .up_scale_module import NoPromptUpScaleModule
 
 
 class CombinedModelV1(nn.Module):

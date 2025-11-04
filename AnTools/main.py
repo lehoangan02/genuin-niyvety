@@ -17,16 +17,17 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     if args.phase == 'train':
-        from model.combined_model import CombinedModelV3
+        from model.combined_model import *
         from train import TrainModule
-        from dataset import FewShotDetDataset, custom_collate_fn
+        # from dataset import FewShotDetDataset, custom_collate_fn
+        from embedding_dataset import EmbeddingDetDataset, custom_collate_fn
         from model import CombinedModelV3
         from transformers import CLIPProcessor
         from torch.utils.data import DataLoader
         import torchvision.transforms as T
         from model import DecoderV1
         import torch
-        model = CombinedModelV3() 
+        model = CombinedModelV4() 
         # --- 1. Define Device ---
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using device: {device}")
@@ -53,12 +54,11 @@ if __name__ == "__main__":
         ])
 
         # --- 3. Create Dataset and DataLoader ---
-        data_root = './../DATA' # Point this to your DATA folder
+        data_root = '/media/dptphat/McQueen/datasets/ZaloAIC25/DATA' # Point this to your DATA folder
         batch_size = 8
 
-        train_dataset = FewShotDetDataset(
+        train_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
-            query_transform=query_transform,
             frame_transform=frame_transform
         )
 
