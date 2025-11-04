@@ -55,7 +55,7 @@ if __name__ == "__main__":
 
         # --- 3. Create Dataset and DataLoader ---
         data_root = args.data_dir
-        batch_size = 8
+        batch_size = args.batch_size
 
         train_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
