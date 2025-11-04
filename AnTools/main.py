@@ -54,7 +54,7 @@ if __name__ == "__main__":
         ])
 
         # --- 3. Create Dataset and DataLoader ---
-        data_root = '/media/dptphat/McQueen/datasets/ZaloAIC25/DATA' # Point this to your DATA folder
+        data_root = args.data_dir
         batch_size = 8
 
         train_dataset = EmbeddingDetDataset(
