@@ -42,3 +42,8 @@ cd AnTools
 python ./sanity_check/sanity_check_v3.py
 ```
 
+## How to evaluate models
+```
+# set up the environment
+cd AnTools
+
