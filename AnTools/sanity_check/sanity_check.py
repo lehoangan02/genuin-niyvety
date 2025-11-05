@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as T
 
 # --- 1. Define Device ---
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
 print(f"Using device: {device}")
 
 # --- 2. Define Transforms ---

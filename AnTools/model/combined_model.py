@@ -72,7 +72,8 @@ class CombinedModelV1(nn.Module):
         # (e.g., [B, 48, H/4, W/4], [B, 96, H/8, W/8], ...)
         frame_features = self.fastvit_backbone(frame_batch)
 
-        return query_features, frame_features
+        # return query_features, frame_features
+        return frame_features
 
 
 class CombinedModelV2(nn.Module):
@@ -350,7 +351,7 @@ class CombinedModelV4(nn.Module):
 
 
 def main() -> None:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     batch_size, num_queries, embedding_dim = 2, 3, 512
     height, width = 224, 224
 
