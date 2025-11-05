@@ -6,7 +6,7 @@ def parse_args():
     parser.add_argument('--num_epoch', type=int, default=1, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
-    parser.add_argument('--init_lr', type=float, default=1e-4, help='Initial learning rate')
+    parser.add_argument('--init_lr', type=float, default=1e-2, help='Initial learning rate')
     parser.add_argument('--resume', type=str, default="./weights/model_last.pth", help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
@@ -22,7 +22,6 @@ if __name__ == "__main__":
         # from dataset import FewShotDetDataset, custom_collate_fn
         from embedding_dataset import EmbeddingDetDataset, custom_collate_fn
         from model import *
-        from transformers import CLIPProcessor
         from torch.utils.data import DataLoader
         import torchvision.transforms as T
         from model import DecoderV1
@@ -63,7 +62,6 @@ if __name__ == "__main__":
         # from dataset import FewShotDetDataset, custom_collate_fn
         from embedding_dataset import EmbeddingDetDataset, custom_collate_fn
         from model import *
-        from transformers import CLIPProcessor
         from torch.utils.data import DataLoader
         import torchvision.transforms as T
         from model import DecoderV1
@@ -84,7 +82,7 @@ if __name__ == "__main__":
         data_root = args.data_dir
         batch_size = args.batch_size
 
-        train_dataset = EmbeddingDetDataset(
+        test_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
             frame_transform=frame_transform,
             phase="test"
@@ -92,7 +90,7 @@ if __name__ == "__main__":
 
         decoder = DecoderV1()
         eval_module = EvalModule(model, decoder, device, batch_size=args.batch_size, num_workers=args.num_workers)
-        eval_module.evaluate(train_dataset, result_dir="results", resume_path=args.resume)
+        eval_module.evaluate(test_dataset, result_dir="results", resume_path=args.resume)
     elif args.phase == 'encode':
         import encoder as encoder
         if args.encoder == 'clip-vit-base-patch32':
