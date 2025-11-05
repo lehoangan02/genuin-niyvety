@@ -10,14 +10,14 @@ import os
 
 # ---------------------------------------------------------------
 class mAPCalculator:
-    def __init__(self, DATA_PATH="./../DATA"):
+    def __init__(self, DATA_PATH="./"):
         # ================================================================
         # ======== CONFIGURATION ========
         self.DATA_PATH = DATA_PATH
 
         # 🔗 File paths
-        self.GROUND_TRUTH_PATH = os.path.join(self.DATA_PATH, "label.txt")       # your GT file
-        self.PREDICTIONS_PATH  = os.path.join(self.DATA_PATH, "test_output.txt")  # your prediction file
+        self.GROUND_TRUTH_PATH = os.path.join(self.DATA_PATH, "label_val.txt")       # your GT file
+        self.PREDICTIONS_PATH  = os.path.join(self.DATA_PATH, "results.txt")  # your prediction file
         # ================================================================
 
 
@@ -120,7 +120,7 @@ class mAPCalculator:
     # ================================================================
 if __name__ == "__main__":
 
-    map_calculator = mAPCalculator(DATA_PATH="./../DATA")
+    map_calculator = mAPCalculator(DATA_PATH="./")
     mean_stiou, mean_ap = map_calculator.evaluate()
 
     print("\n================ Evaluation Results ================")

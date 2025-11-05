@@ -48,3 +48,15 @@ python ./sanity_check/sanity_check_v3.py
 cd AnTools
 python main.py --phase test --resume ./weights/model_last.pth --batch_size 1 --num_workers 4
 ```
+
+The prediction results will be in the AnTools/results/results.txt file.
+
+To calculate the mAP of the predictions, you need to put mAP.py, results.txt and label_val.txt in the same folder.
+
+```
+# evaluation_folder/
+#     mAP.py
+#    results.txt
+#    label_val.txt
+python mAP.py
+```
