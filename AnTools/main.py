@@ -7,7 +7,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--init_lr', type=float, default=1e-4, help='Initial learning rate')
-    parser.add_argument('--resume', type=str, default=None, help='Path to resume training from a checkpoint')
+    parser.add_argument('--resume', type=str, default="./weights/model_last.pth", help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
     parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT, SPA}')
