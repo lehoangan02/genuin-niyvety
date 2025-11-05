@@ -29,7 +29,7 @@ class EmbeddingDetDataset(Dataset):
 
     def __getitem__(self, idx):
         line_parts = self.annotations[idx].split()
-
+        video_name = line_parts[0]
         query_names = line_parts[1:4]
         frame_name = line_parts[4]
         bbox_data = [float(coord) for coord in line_parts[5:]]
@@ -67,11 +67,13 @@ class EmbeddingDetDataset(Dataset):
         bbox_converted = [cx, cy, w, h]
 
         # Format the target
-        target = {}
-        target["boxes"] = torch.tensor([bbox_converted], dtype=torch.float32)
-        target["labels"] = torch.tensor([bbox_data[0]], dtype=torch.int64)
-
-        return query_tensor, frame_image, target
+        if self.phase == 'train':
+            target = {}
+            target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
+            target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
+            return query_tensor, frame_image, target
+        elif self.phase == 'test':
+            return video_name, query_tensor, frame_image
 
 
 # --- Collate function (Same as before) ---

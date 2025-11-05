@@ -18,7 +18,7 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
     )
 
     with open(out_file, "w") as f:
-        for batch_idx, (query_tensors, frame_images, targets) in enumerate(
+        for batch_idx, (video_names, query_tensors, frame_images, targets) in enumerate(
             tqdm(loader, desc="Evaluating", total=len(loader))
         ):
             # Stack and move to device
@@ -36,8 +36,8 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
                 if len(boxes) == 0:
                     continue
 
+                video_name = video_names[i]
                 query_names = [f"q{j}" for j in range(3)]
-                frame_name = f"frame_{batch_idx * batch_size + i}.jpg"
                 cls_id = int(targets[i]['labels'][0].item())
 
                 for box in boxes:
@@ -46,7 +46,7 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
                     y1 = cy - h / 2
                     x2 = cx + w / 2
                     y2 = cy + h / 2
-                    line = f"{query_names[0]} {query_names[1]} {query_names[2]} {frame_name} {cls_id} {int(x1)} {int(y1)} {int(x2)} {int(y2)}\n"
+                    line = f"{video_name} {query_names[0]} {query_names[1]} {query_names[2]} {cls_id} {int(x1)} {int(y1)} {int(x2)} {int(y2)}\n"
                     f.write(line)
 
     if print_ps:

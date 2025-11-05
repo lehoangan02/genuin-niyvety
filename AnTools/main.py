@@ -73,7 +73,7 @@ if __name__ == "__main__":
         trainer = TrainModule(train_loader, model, decoder=decoder) 
         trainer.train_network(args) 
     elif args.phase == 'test':
-        # Testing code to be implemented
+        
         pass
     elif args.phase == 'encode':
         import encoder as encoder

@@ -10,7 +10,8 @@ class FewShotDetDataset(Dataset):
     Modified Dataset to handle separate transforms for 
     query images (for CLIP) and frame images (for FastViT).
     """
-    def __init__(self, data_root_dir, query_transform=None, frame_transform=None):
+    def __init__(self, data_root_dir, query_transform=None, frame_transform=None, phase='train'):
+        self.phase = phase
         self.frame_dir = os.path.join(data_root_dir, 'frames')
         self.image_dir = os.path.join(data_root_dir, 'images')
         annot_file_path = os.path.join(data_root_dir, 'label.txt')
@@ -26,7 +27,7 @@ class FewShotDetDataset(Dataset):
 
     def __getitem__(self, idx):
         line_parts = self.annotations[idx].split()
-        
+        video_name = line_parts[0]
         query_names = line_parts[1:4]
         frame_name = line_parts[4]
         bbox_data = [float(coord) for coord in line_parts[5:]]
@@ -60,11 +61,13 @@ class FewShotDetDataset(Dataset):
         bbox_converted = [cx, cy, w, h]
         
         # Format the target
-        target = {}
-        target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
-        target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
-
-        return query_tensor, frame_image, target
+        if self.phase == 'train':
+            target = {}
+            target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
+            target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
+            return query_tensor, frame_image, target
+        elif self.phase == 'test':
+            return video_name, query_tensor, frame_image
 
 # --- Collate function (Same as before) ---
 def custom_collate_fn(batch):
