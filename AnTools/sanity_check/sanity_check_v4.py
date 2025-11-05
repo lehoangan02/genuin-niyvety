@@ -32,8 +32,8 @@ frame_transform = T.Compose([
     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ])
 
-data_root = "./../DATA"
-batch_size = 8
+data_root = "/media/dptphat/McQueen/datasets/ZaloAIC25/DATA"
+batch_size = 12
 
 dataset = EmbeddingDetDataset(
     data_root_dir=data_root,
@@ -44,12 +44,13 @@ loader = DataLoader(
     dataset=dataset,
     batch_size=batch_size,
     shuffle=False,
-    collate_fn=custom_collate_fn
+    collate_fn=custom_collate_fn,
+    num_workers=12
 )
 
 model = CombinedModelV4().to(device)
 decoder = DecoderV1()
 
 # Initialize and run evaluation
-eval_module = EvalModule(model, decoder, device, batch_size=2)
-eval_module.evaluate(dataset, result_dir="results", resume_path="weights/model_last_v4.pth")
+eval_module = EvalModule(model, decoder, device, batch_size=batch_size)
+eval_module.evaluate(dataset, result_dir="results", resume_path="weights/model_3.pth")
