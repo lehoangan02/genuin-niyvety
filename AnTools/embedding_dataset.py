@@ -77,7 +77,7 @@ class EmbeddingDetDataset(Dataset):
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
             return query_tensor, frame_image, target
         elif self.phase == 'test':
-            return video_name, query_tensor, frame_image
+            return video_name, query_names, query_tensor, frame_name, frame_image
 
 
 # --- Collate function (Same as before) ---

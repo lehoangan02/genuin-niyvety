@@ -86,11 +86,12 @@ if __name__ == "__main__":
 
         train_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
-            frame_transform=frame_transform
+            frame_transform=frame_transform,
+            phase="test"
         )
 
         decoder = DecoderV1()
-        eval_module = EvalModule(model, decoder, device, batch_size=args.batch_size)
+        eval_module = EvalModule(model, decoder, device, batch_size=args.batch_size, num_workers=args.num_workers)
         eval_module.evaluate(train_dataset, result_dir="results", resume_path=args.resume)
     elif args.phase == 'encode':
         import encoder as encoder
