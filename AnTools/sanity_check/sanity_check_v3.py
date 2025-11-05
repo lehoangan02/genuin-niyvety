@@ -49,7 +49,7 @@ train_dataset = FewShotDetDataset(
 train_loader = DataLoader(
     dataset=train_dataset,
     batch_size=batch_size,
-    shuffle=True,
+    shuffle=False,
     collate_fn=custom_collate_fn
 )
 
@@ -80,5 +80,9 @@ with torch.no_grad():
     decoder_output = decoder(frame_features)
     boxes_list, scores_list = decoder_output
     print(f"Decoder output: {len(boxes_list)} batch(es)")
-    print(f"First batch boxes shape: {boxes_list[0].shape}")
-    print(f"First batch scores shape: {scores_list[0].shape}")
+    for (i, (boxes, scores)) in enumerate(zip(boxes_list, scores_list)):
+        print(f"Batch {i}: Boxes shape: {boxes.shape}, Scores shape: {scores.shape}")
+        for j in range(len(scores)):
+            box = boxes[j].cpu().numpy()
+            score = scores[j].item()
+            print(f"  Box {j}: {box}, Score: {score:.4f}")
