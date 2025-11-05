@@ -1,0 +1,3 @@
+Backpack_0 Backpack_0_Img1 Backpack_0_Img2 Backpack_0_Img3 Backpack_0_frame00001_0.jpg
+Backpack_1 Backpack_1_Img1 Backpack_1_Img2 Backpack_1_Img3 Backpack_1_frame00956_0.jpg
+Jacket_0 Jacket_0_Img1 Jacket_0_Img2 Jacket_0_Img3 Jacket_0_frame00716_1.jpg

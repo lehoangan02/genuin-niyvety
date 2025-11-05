@@ -1,0 +1,4 @@
+Jacket_0 Jacket_0_Img1 Jacket_0_Img2 Jacket_0_Img3 Jacket_0_frame00716_1.jpg 1 941 144 965 165
+Lifering_1 Lifering_1_Img1 Lifering_1_Img2 Lifering_1_Img3 Lifering_1_frame05605_1.jpg 1 363 257 404 285
+Lifering_1 Lifering_1_Img1 Lifering_1_Img2 Lifering_1_Img3 Lifering_1_frame05606_1.jpg 1 363 257 404 286
+Lifering_1 Lifering_1_Img1 Lifering_1_Img2 Lifering_1_Img3 Lifering_1_frame05607_1.jpg 1 364 258 405 286
