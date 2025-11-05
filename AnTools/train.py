@@ -10,10 +10,9 @@ from torch.utils.data import DataLoader
 
 class TrainModule(object):
     # CHANGED: Now accepts the DataLoader instance directly
-    def __init__(self, train_loader, model, decoder=None, down_ratio=4):
+    def __init__(self, train_loader, model, down_ratio=4):
         torch.manual_seed(317)
         self.train_loader = train_loader # Store the passed-in loader
-        self.decoder = decoder
         self.down_ratio = down_ratio
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
         self.model = model
@@ -70,9 +69,9 @@ class TrainModule(object):
         save_path = f'weights' 
         start_epoch = 1
 
-        if args.resume_train:
+        if args.resume:
             self.model, self.optimizer, start_epoch = self.load_model(
-                self.model, self.optimizer, args.resume_train, strict=True
+                self.model, self.optimizer, args.resume, strict=True
             )
 
         os.makedirs(save_path, exist_ok=True)

@@ -7,7 +7,7 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--init_lr', type=float, default=1e-4, help='Initial learning rate')
-    parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
+    parser.add_argument('--resume', type=str, default=None, help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
     parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT, SPA}')
@@ -21,7 +21,7 @@ if __name__ == "__main__":
         from train import TrainModule
         # from dataset import FewShotDetDataset, custom_collate_fn
         from embedding_dataset import EmbeddingDetDataset, custom_collate_fn
-        from model import CombinedModelV3
+        from model import *
         from transformers import CLIPProcessor
         from torch.utils.data import DataLoader
         import torchvision.transforms as T
@@ -32,19 +32,46 @@ if __name__ == "__main__":
         device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {device}")
 
-        # --- 2. Define Transforms ---
-
-        # Get the *exact* preprocessing for CLIP
-        clip_model_id = "openai/clip-vit-base-patch32"
-        processor = CLIPProcessor.from_pretrained(clip_model_id)
-        clip_image_processor = processor.image_processor
-
-        # Transform for the 3 QUERY images (must match CLIP)
-        query_transform = T.Compose([
-            T.Resize((clip_image_processor.crop_size['height'], clip_image_processor.crop_size['width'])),
+        # Transform for the FRAME image (No resize, just normalize)
+        # Using standard ImageNet mean/std for the timm model
+        frame_transform = T.Compose([
             T.ToTensor(),
-            T.Normalize(mean=clip_image_processor.image_mean, std=clip_image_processor.image_std)
+            T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
+
+        # --- 3. Create Dataset and DataLoader ---
+        data_root = args.data_dir
+        batch_size = args.batch_size
+
+        train_dataset = EmbeddingDetDataset(
+            data_root_dir=data_root,
+            frame_transform=frame_transform
+        )
+
+        train_loader = DataLoader(
+            dataset=train_dataset,
+            batch_size=batch_size,
+            shuffle=True,
+            collate_fn=custom_collate_fn,
+            num_workers=args.num_workers
+        )
+        trainer = TrainModule(train_loader, model) 
+        trainer.train_network(args) 
+    elif args.phase == 'test':
+        from model.combined_model import *
+        from eval import EvalModule, write_results
+        # from dataset import FewShotDetDataset, custom_collate_fn
+        from embedding_dataset import EmbeddingDetDataset, custom_collate_fn
+        from model import *
+        from transformers import CLIPProcessor
+        from torch.utils.data import DataLoader
+        import torchvision.transforms as T
+        from model import DecoderV1
+        import torch
+        model = CombinedModelV4() 
+        # --- 1. Define Device ---
+        device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+        print(f"Using device: {device}")
 
         # Transform for the FRAME image (No resize, just normalize)
         # Using standard ImageNet mean/std for the timm model
@@ -70,11 +97,8 @@ if __name__ == "__main__":
             num_workers=args.num_workers
         )
         decoder = DecoderV1()
-        trainer = TrainModule(train_loader, model, decoder=decoder) 
-        trainer.train_network(args) 
-    elif args.phase == 'test':
-        
-        pass
+        eval_module = EvalModule(model, decoder, device, batch_size=2) 
+        eval_module.evaluate(train_dataset, result_dir="results", resume_path=args.resume)
     elif args.phase == 'encode':
         import encoder as encoder
         if args.encoder == 'clip-vit-base-patch32':
