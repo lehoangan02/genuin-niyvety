@@ -97,7 +97,7 @@ if __name__ == "__main__":
             num_workers=args.num_workers
         )
         decoder = DecoderV1()
-        eval_module = EvalModule(model, decoder, device, batch_size=2) 
+        eval_module = EvalModule(model, decoder, device, batch_size=args.batch_size)
         eval_module.evaluate(train_dataset, result_dir="results", resume_path=args.resume)
     elif args.phase == 'encode':
         import encoder as encoder
