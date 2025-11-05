@@ -46,4 +46,5 @@ python ./sanity_check/sanity_check_v3.py
 ```
 # set up the environment
 cd AnTools
-
+python main.py --phase test --resume ./weights/model_last.pth --batch_size 1 --num_workers 4
+```
