@@ -12,13 +12,16 @@ class EmbeddingDetDataset(Dataset):
     query images (for CLIP) and frame images (for FastViT).
     """
 
-    def __init__(self, data_root_dir, frame_transform=None):
+    def __init__(self, data_root_dir, frame_transform=None, phase="train"):
+        self.phase = phase
         self.frame_dir = os.path.join(data_root_dir, "frames")
         self.embedding_dir = os.path.join(
             data_root_dir, "embeddings_clip-vit-base-patch32"
         )
-        annot_file_path = os.path.join(data_root_dir, "label.txt")
-
+        if self.phase == "train":
+            annot_file_path = os.path.join(data_root_dir, "label_train.txt")
+        elif self.phase == "test":
+            annot_file_path = os.path.join(data_root_dir, "test_list.txt")
         self.frame_transform = frame_transform
 
         with open(annot_file_path, "r") as f:
@@ -58,16 +61,17 @@ class EmbeddingDetDataset(Dataset):
         # Stack the 3 query embeddings to build (num_queries, embedding_dim)
         query_tensor = torch.concat(query_embeddings)
 
-        # --- Convert bbox from (x1, y1, x2, y2) → (cx, cy, w, h) ---
-        x1, y1, x2, y2 = bbox_data[1:]
-        cx = (x1 + x2) / 2.0
-        cy = (y1 + y2) / 2.0
-        w = x2 - x1
-        h = y2 - y1
-        bbox_converted = [cx, cy, w, h]
+        
 
         # Format the target
         if self.phase == 'train':
+            # --- Convert bbox from (x1, y1, x2, y2) → (cx, cy, w, h) ---
+            x1, y1, x2, y2 = bbox_data[1:]
+            cx = (x1 + x2) / 2.0
+            cy = (y1 + y2) / 2.0
+            w = x2 - x1
+            h = y2 - y1
+            bbox_converted = [cx, cy, w, h]
             target = {}
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)

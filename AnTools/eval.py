@@ -9,28 +9,36 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
 
     print(f"Saving results to {out_file}")
 
-    # Create DataLoader for batching
     loader = torch.utils.data.DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=False,
-        collate_fn=lambda x: list(zip(*x))  # simple collate to unpack tuples
+        collate_fn=lambda x: list(zip(*x))
     )
 
     with open(out_file, "w") as f:
-        for batch_idx, (video_names, query_tensors, frame_images, targets) in enumerate(
-            tqdm(loader, desc="Evaluating", total=len(loader))
-        ):
-            # Stack and move to device
-            query_batch = torch.stack(query_tensors).to(device)   # [B, 3, C, H, W]
-            frame_batch = torch.stack(frame_images).to(device)    # [B, C, H, W]
+        for batch_idx, batch in enumerate(tqdm(loader, desc="Evaluating", total=len(loader))):
+            # --- Handle phase differences ---
+            if dataset.phase == 'train':
+                query_tensors, frame_images, targets = batch
+                video_names = [f"frame_{batch_idx * batch_size + i}" for i in range(len(frame_images))]
+            else:  # test phase
+                video_names, query_tensors, frame_images = batch
+                targets = [None] * len(video_names)
+
+            # Move data to device
+            query_batch = torch.stack(query_tensors).to(device)
+            frame_batch = torch.stack(frame_images).to(device)
 
             with torch.no_grad():
+                model = model.to(device).to(torch.float32)
+                query_batch = query_batch.to(device, dtype=torch.float32)
+                frame_batch = frame_batch.to(device, dtype=torch.float32)
                 preds = model(query_batch, frame_batch)
                 boxes_list, scores_list = decoder(preds)
 
-            # Process outputs for each sample in batch
-            for i in range(len(targets)):
+            # Write predictions
+            for i in range(len(video_names)):
                 boxes = boxes_list[i].cpu().numpy()
                 scores = scores_list[i].cpu().numpy()
                 if len(boxes) == 0:
@@ -38,14 +46,11 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
 
                 video_name = video_names[i]
                 query_names = [f"q{j}" for j in range(3)]
-                cls_id = int(targets[i]['labels'][0].item())
+                cls_id = int(targets[i]['labels'][0].item()) if targets[i] else -1  # -1 if test phase
 
                 for box in boxes:
                     cx, cy, w, h = box
-                    x1 = cx - w / 2
-                    y1 = cy - h / 2
-                    x2 = cx + w / 2
-                    y2 = cy + h / 2
+                    x1, y1, x2, y2 = cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
                     line = f"{video_name} {query_names[0]} {query_names[1]} {query_names[2]} {cls_id} {int(x1)} {int(y1)} {int(x2)} {int(y2)}\n"
                     f.write(line)
 

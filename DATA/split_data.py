@@ -64,3 +64,11 @@ with open(val_txt, "w") as f:
 print(f"\n✅ Done! Labels saved in '{OUTPUT_DIR}/'")
 print(f"   - Train labels: {len(train_lines)} lines")
 print(f"   - Val labels:   {len(val_lines)} lines")
+
+# make the test_list.txt file that is the same as val file but without labels
+test_txt = os.path.join(OUTPUT_DIR, "test_list.txt")
+with open(test_txt, "w") as f:
+    for line in val_lines:
+        parts = line.split()
+        test_line = " ".join(parts[:5])  # keep only video_id, q1, q2, q3, frame_name
+        f.write(test_line + "\n")
