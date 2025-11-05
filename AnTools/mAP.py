@@ -6,11 +6,15 @@
 # ================================================================
 
 import numpy as np
+import os
 
 # ---------------------------------------------------------------
+
+DATA_PATH = "./../DATA"
+
 # 🔗 File paths
-GROUND_TRUTH_PATH = "label.txt"       # your GT file
-PREDICTIONS_PATH  = "test_output.txt" # your prediction file
+GROUND_TRUTH_PATH = os.path.join(DATA_PATH, "label.txt")       # your GT file
+PREDICTIONS_PATH  = os.path.join(DATA_PATH, "test_output.txt")  # your prediction file
 IOU_THRESHOLD     = 0.5               # for optional mAP@50
 # ================================================================
 
