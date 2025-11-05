@@ -15,7 +15,7 @@ class TrainModule(object):
         self.train_loader = train_loader # Store the passed-in loader
         self.decoder = decoder
         self.down_ratio = down_ratio
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
         self.model = model
 
     def save_model(self, path, epoch, model, optimizer):

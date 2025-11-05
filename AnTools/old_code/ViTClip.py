@@ -6,7 +6,7 @@ import numpy as np
 
 class ViTClipEncoder:
     def __init__(self, model_id: str = "openai/clip-vit-base-patch32"):
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {self.device}")
         # List of model id:
         model_id = "openai/clip-vit-base-patch32"

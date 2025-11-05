@@ -350,7 +350,7 @@ class CombinedModelV4(nn.Module):
 
 
 def main() -> None:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     batch_size, num_queries, embedding_dim = 2, 3, 512
     height, width = 224, 224
 

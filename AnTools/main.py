@@ -4,7 +4,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='banpath model')
     parser.add_argument('--num_epoch', type=int, default=1, help='Number of epochs')
-    parser.add_argument('--batch_size', type=int, default=12, help='Batch size')
+    parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--init_lr', type=float, default=1e-4, help='Initial learning rate')
     parser.add_argument('--resume_train', type=str, default=None, help='Path to resume training from a checkpoint')
@@ -29,7 +29,7 @@ if __name__ == "__main__":
         import torch
         model = CombinedModelV4() 
         # --- 1. Define Device ---
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {device}")
 
         # --- 2. Define Transforms ---
