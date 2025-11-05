@@ -66,7 +66,7 @@ class FewShotDetDataset(Dataset):
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
             return query_tensor, frame_image, target
-        elif self.phase == 'test':
+        elif self.phase == 'inference':
             return video_name, query_tensor, frame_image
 
 # --- Collate function (Same as before) ---
