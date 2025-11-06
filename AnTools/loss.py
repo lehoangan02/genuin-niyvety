@@ -4,14 +4,14 @@ import torch.nn.functional as F
 
 class FocalLoss(nn.Module):
     """
-    Focal loss for heatmap-like targets.
-    Expects pred (logits) and gt (in [0,1]) with same shape.
-    Uses alpha (focusing power for preds) and beta (weighting for negatives).
+    Standard Focal loss for binary (0/1) targets.
+    Expects pred (logits) and gt (0 or 1) with same shape.
+    
+    alpha (gamma in the original paper) is the focusing parameter.
     """
-    def __init__(self, alpha=2.0, beta=4.0, eps=1e-6):
+    def __init__(self, alpha=2.0, eps=1e-6):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
-        self.beta = beta
         self.eps = eps
 
     def forward(self, pred, gt):
@@ -20,18 +20,19 @@ class FocalLoss(nn.Module):
 
         pos_mask = gt.eq(1).float()
         neg_mask = gt.lt(1).float()
-        neg_weights = torch.pow(1 - gt, self.beta)
 
         pos_loss = torch.log(pred_prob) * torch.pow(1 - pred_prob, self.alpha) * pos_mask
-        neg_loss = torch.log(1 - pred_prob) * torch.pow(pred_prob, self.alpha) * neg_weights * neg_mask
+        neg_loss = torch.log(1 - pred_prob) * torch.pow(pred_prob, self.alpha) * neg_mask
 
         pos_loss = pos_loss.sum()
         neg_loss = neg_loss.sum()
         num_pos = pos_mask.sum()
 
         if num_pos == 0:
+            # no positive samples, only negative loss
             loss = -neg_loss
         else:
+            # normalize by number of positive samples
             loss = -(pos_loss + neg_loss) / num_pos
         return loss
 
@@ -39,31 +40,20 @@ class LossAll(nn.Module):
     """
     Loss wrapper that matches your model output layout for CombinedModelV3:
 
-    Channel 0 -> confidence (BCEWithLogits)
+    Channel 0 -> confidence (Focal Loss)
     Channels 1-2 -> center (relative x, y)
     Channels 3-4 -> width/height (relative w, h)
 
-    The forward() expects:
-      preds: tensor [B, 5, H, W]
-      targets: list of dictionaries, one per batch item
-               [{'boxes': tensor, 'labels': tensor}, ...]
-      frame_tensor: tensor [B, 3, H_frame, W_frame] (for scaling)
-      
-    and returns a single scalar tensor (total loss).
+    Assumes at most ONE object per frame.
     """
 
     def __init__(self,
                  focal_alpha=2.0,
-                 focal_beta=4.0,
                  lambda_conf=1.0,
                  lambda_center=1.0,
                  lambda_wh=1.0):
         super(LossAll, self).__init__()
-        # Use FocalLoss for confidence/objectness map
-        self.focal = FocalLoss(alpha=focal_alpha, beta=focal_beta)
-        
-        # Use SmoothL1 for the regression targets (center, w, h)
-        # Note: We will apply this only at the positive locations
+        self.focal = FocalLoss(alpha=focal_alpha)
         self.smooth_l1 = nn.SmoothL1Loss(reduction='sum') 
         
         self.lambda_conf = lambda_conf
@@ -83,9 +73,7 @@ class LossAll(nn.Module):
         B, C_pred, H, W = preds.shape
         _, _, frame_H, frame_W = frame_tensor.shape
 
-        # Create the empty ground truth tensor
         gt_tensor = torch.zeros(B, 5, H, W, device=preds.device)
-        # Create a mask for where the regression loss should be applied
         reg_mask = torch.zeros(B, 1, H, W, device=preds.device, dtype=torch.bool)
 
         num_pos = 0.0
@@ -93,8 +81,9 @@ class LossAll(nn.Module):
         for b in range(B):
             target_boxes = targets[b]['boxes'] # Shape: [num_boxes, 4]
             
-            for i in range(target_boxes.shape[0]):
-                box = target_boxes[i]
+            if target_boxes.shape[0] > 0:
+                box = target_boxes[0]
+                
                 x1, y1, x2, y2 = box
                 
                 x_center_rel = ((x1 + x2) / 2) / frame_W
@@ -111,36 +100,33 @@ class LossAll(nn.Module):
                 cx_int = max(0, min(cx_int, W - 1))
                 cy_int = max(0, min(cy_int, H - 1))
 
-                # Set the confidence score for this cell to 1
                 gt_tensor[b, 0, cy_int, cx_int] = 1.0
                 
-                # Set the regression targets
                 gt_tensor[b, 1, cy_int, cx_int] = x_center_rel
                 gt_tensor[b, 2, cy_int, cx_int] = y_center_rel
                 gt_tensor[b, 3, cy_int, cx_int] = width_rel
                 gt_tensor[b, 4, cy_int, cx_int] = height_rel
                 
-                # Mark this location for regression loss
                 reg_mask[b, 0, cy_int, cx_int] = True
                 num_pos += 1.0
 
         # --- 2. Calculate Losses ---
 
-        # split channels
-        conf_pred = preds[:, 0:1, :, :]      # [B, 1, H, W] (keep dim for focal)
-        center_pred = preds[:, 1:3, :, :]    # [B, 2, H, W]
-        wh_pred = preds[:, 3:5, :, :]        # [B, 2, H, W]
-
-        conf_gt = gt_tensor[:, 0:1, :, :]    # [B, 1, H, W]
-        center_gt = gt_tensor[:, 1:3, :, :]  # [B, 2, H, W]
-        wh_gt = gt_tensor[:, 3:5, :, :]      # [B, 2, H, W]
-
         # Confidence: Focal loss on the confidence map
-        # focal expects logits, so we pass conf_pred directly
+        conf_pred = preds[:, 0:1, :, :]
+        conf_gt = gt_tensor[:, 0:1, :, :]
         loss_conf = self.focal(conf_pred, conf_gt)
 
-        # Expand the regression mask to match channel dimensions
-        # reg_mask [B, 1, H, W] -> [B, 2, H, W]
+        # --- Regression Loss (Center & WH) ---
+        
+        # Split the tensors first
+        center_pred = preds[:, 1:3, :, :]    # [B, 2, H, W]
+        center_gt = gt_tensor[:, 1:3, :, :]  # [B, 2, H, W]
+        wh_pred = preds[:, 3:5, :, :]        # [B, 2, H, W]
+        wh_gt = gt_tensor[:, 3:5, :, :]      # [B, 2, H, W]
+
+        # *** THIS IS THE FIX ***
+        # Expand the [B, 1, H, W] mask to [B, 2, H, W]
         center_mask = reg_mask.expand_as(center_pred)
         wh_mask = reg_mask.expand_as(wh_pred)
 
@@ -150,10 +136,8 @@ class LossAll(nn.Module):
         
         wh_pred_pos = wh_pred[wh_mask]
         wh_gt_pos = wh_gt[wh_mask]
+        # *** END OF FIX ***
 
-        # Center & WH: Smooth L1 on the regression channels,
-        # only at positive locations.
-        
         # Normalize by number of positive boxes
         num_pos = max(1.0, num_pos) 
 
@@ -168,9 +152,9 @@ class LossAll(nn.Module):
         # For debugging, you could return a dict:
         # return {
         #     "total": total_loss,
-        #     "conf": loss_conf,
-        #     "center": loss_center,
-        #     "wh": loss_wh
+        #     "conf": loss_conf.detach(),
+        #     "center": loss_center.detach(),
+        #     "wh": loss_wh.detach()
         # }
         
         return total_loss
