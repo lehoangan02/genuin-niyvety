@@ -20,7 +20,7 @@ class EmbeddingDetDataset(Dataset):
         )
         if self.phase == "train":
             annot_file_path = os.path.join(data_root_dir, "label_train.txt")
-        elif self.phase == "test":
+        elif self.phase == "inference":
             annot_file_path = os.path.join(data_root_dir, "test_list.txt")
         self.frame_transform = frame_transform
 
@@ -76,7 +76,7 @@ class EmbeddingDetDataset(Dataset):
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
             return query_tensor, frame_image, target
-        elif self.phase == 'test':
+        elif self.phase == 'inference':
             return video_name, query_names, query_tensor, frame_name, frame_image
 
 

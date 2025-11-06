@@ -8,7 +8,7 @@ def parse_args():
     parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
     parser.add_argument('--init_lr', type=float, default=1e-2, help='Initial learning rate')
     parser.add_argument('--resume', type=str, default=None, help='Path to resume training from a checkpoint')
-    parser.add_argument('--phase', type=str, default='test', help='Phase choice= {train, test, encode}')
+    parser.add_argument('--phase', type=str, default='inference', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
     parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT, SPA}')
     return parser.parse_args()
@@ -56,7 +56,7 @@ if __name__ == "__main__":
         )
         trainer = TrainModule(train_loader, model) 
         trainer.train_network(args) 
-    elif args.phase == 'test':
+    elif args.phase == 'inference':
         from model.combined_model import *
         from eval import EvalModule, write_results
         # from dataset import FewShotDetDataset, custom_collate_fn
@@ -85,7 +85,7 @@ if __name__ == "__main__":
         test_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
             frame_transform=frame_transform,
-            phase="test"
+            phase="inference"
         )
 
         decoder = DecoderV1()
