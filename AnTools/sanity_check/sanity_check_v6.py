@@ -45,6 +45,7 @@ embeddings = np.stack(embeddings, axis=0)
 embeddings = torch.from_numpy(embeddings).float()
 print("Emmbeddings shapes: ", embeddings.shape)
 embeddings = embeddings.to(device)
+embeddings = embeddings.reshape(1, -1, embeddings.shape[2], embeddings.shape[3])
 
 model = CombinedModelV5().to(device)
 decoder = DecoderV1()
