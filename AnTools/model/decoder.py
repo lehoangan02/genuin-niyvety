@@ -2,7 +2,7 @@ import torch
 from torchvision.ops import nms
 
 class DecoderV1(torch.nn.Module):
-    def __init__(self, iou_threshold=0.5, score_threshold=0.15, topk=1):
+    def __init__(self, iou_threshold=0.5, score_threshold=-1, topk=1):
         super().__init__()
         self.iou_threshold = iou_threshold
         self.score_threshold = score_threshold
