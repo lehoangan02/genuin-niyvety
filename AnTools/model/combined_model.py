@@ -350,8 +350,112 @@ class CombinedModelV4(nn.Module):
         return output
 
 
+class CombinedModelV6(nn.Module):
+    def __init__(
+        self,
+        embedding_dim: int = 512,
+        fastvit_model_id: str = "fastvit_sa12",
+        freeze_encoder: bool = True,
+    ) -> None:
+        super().__init__()
+
+        self.embedding_dim = embedding_dim
+
+        # FastViT backbone that returns intermediate feature maps.
+        self.fastvit_backbone = timm.create_model(
+            fastvit_model_id,
+            pretrained=True,
+            features_only=True,
+        )
+
+        if freeze_encoder:
+            for param in self.fastvit_backbone.parameters():
+                param.requires_grad = False
+
+        # Grab channel dimensions to guarantee correct projections.
+        feature_channels = self.fastvit_backbone.feature_info.channels()
+        if len(feature_channels) < 4:
+            raise RuntimeError("Expected at least 4 feature maps from FastViT backbone")
+
+        c3, c2, c1, c0 = (
+            feature_channels[3],
+            feature_channels[2],
+            feature_channels[1],
+            feature_channels[0],
+        )
+
+        self.query_proj = nn.Linear(embedding_dim, c3)
+
+        # Reuse the same decoder stack as V3.
+        self.up1 = NoPromptUpScaleModule(c_low=c3, c_high=c2, c_out=c2)
+        self.up2 = NoPromptUpScaleModule(c_low=c2, c_high=c1, c_out=c1)
+        self.up3 = NoPromptUpScaleModule(c_low=c1, c_high=c0, c_out=c0)
+        
+        self.bb_head = nn.Sequential(
+            nn.Conv2d(c0, c0 // 2, kernel_size=3, padding=1),
+            nn.BatchNorm2d(c0 // 2),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(c0 // 2, 4,kernel_size=3, padding=1)
+        )
+        self.cls_head = nn.Sequential(
+            nn.Conv2d(c0, 1,kernel_size=1),
+            nn.Sigmoid()
+        )
+
+    def forward(
+        self, query_embeddings: torch.Tensor, frame_batch: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Args:
+            query_embeddings: Tensor shaped [B, N_queries, embedding_dim].
+            frame_batch: Tensor shaped [B, C, H, W].
+
+        Returns:
+            Tensor shaped [B, 5, H_out, W_out] identical to CombinedModelV3.
+        """
+
+        if query_embeddings.dim() != 3:
+            raise ValueError(
+                f"Expected query embeddings with shape [B, N, D], got {tuple(query_embeddings.shape)}"
+            )
+        if query_embeddings.size(-1) != self.embedding_dim:
+            raise ValueError(
+                f"Expected embedding dimension {self.embedding_dim}, got {query_embeddings.size(-1)}"
+            )
+
+        # Produce backbone features as in previous variants.
+        frame_features = self.fastvit_backbone(frame_batch)
+        f3, f2, f1, f0 = (
+            frame_features[3],
+            frame_features[2],
+            frame_features[1],
+            frame_features[0],
+        )
+
+        # Aggregate query embeddings and project to the channel space of f3.
+        query_embeddings = query_embeddings.to(frame_batch.device, frame_batch.dtype)
+        pooled_query = query_embeddings.mean(dim=1)
+        query_modulation = self.query_proj(pooled_query).unsqueeze(-1).unsqueeze(-1)
+
+        # Fuse query information into the coarsest feature map.
+        f3 = f3 + query_modulation
+
+        x = self.up1(f3, f2)
+        x = self.up2(x, f1)
+        x = self.up3(x, f0)
+        
+        bb = self.bb_head(x)
+        cls = self.cls_head(x)
+
+        return torch.concat([cls, bb], dim=1)
+
+
 def main() -> None:
-    device = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
+    device = torch.device(
+        "cuda"
+        if torch.cuda.is_available()
+        else "mps" if torch.backends.mps.is_available() else "cpu"
+    )
     batch_size, num_queries, embedding_dim = 2, 3, 512
     height, width = 224, 224
 
