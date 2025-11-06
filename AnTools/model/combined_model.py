@@ -341,7 +341,7 @@ class CombinedModelV4(nn.Module):
 
         # Fuse query information into the coarsest feature map.
         f3 = f3 + query_modulation
-
+        
         x = self.up1(f3, f2)
         x = self.up2(x, f1)
         x = self.up3(x, f0)
@@ -385,9 +385,6 @@ class CombinedModelV5(nn.Module):
             feature_channels[1],
             feature_channels[0],
         )
-
-        self.query_proj = nn.Linear(embedding_dim, c3)
-
         self.up1 = NoPromptUpScaleModule(c_low=c3, c_high=c2, c_out=c2)
         self.firstFilter = FirstFilterGeneratorV1()
         self.up2 = PromptUpScaleModuleV1(c_low=c2, c_high=c1, c_out=c1)
@@ -395,7 +392,7 @@ class CombinedModelV5(nn.Module):
         self.up3 = PromptUpScaleModuleV1(c_low=c1, c_high=c0, c_out=c0)
         self.head = nn.Sequential(
             nn.Conv2d(c0, 16, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
+            nn.BatchNorm2d(16),
             nn.LeakyReLU(0.01, inplace=True),
             nn.Conv2d(16, 5, kernel_size=3, padding=1)
         )
@@ -414,9 +411,6 @@ class CombinedModelV5(nn.Module):
         """
         # print query_embeddings shape
         print("query_embeddings shape:", query_embeddings.shape)
-        # query_embeddings: [3, 1024, 14, 14]
-        query_embeddings = query_embeddings.unsqueeze(0)              # [1, 3, 1024, 14, 14]
-        query_embeddings = torch.cat(torch.unbind(query_embeddings, dim=1), dim=1)  # [1, 3072, 14, 14]
 
         # Produce backbone features as in previous variants.
         frame_features = self.fastvit_backbone(frame_batch)
@@ -439,11 +433,8 @@ class CombinedModelV5(nn.Module):
         filter_prompt = self.secondFilter(filter_prompt)
         print("filter_prompt shape:", filter_prompt.shape)
         x = self.up3(x, f0, filter_prompt)
-
-
-
-
-        return None
+        output = self.head(x)
+        return output
 
 
 def main() -> None:

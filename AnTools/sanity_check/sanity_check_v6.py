@@ -50,5 +50,6 @@ model = CombinedModelV5().to(device)
 decoder = DecoderV1()
 
 with torch.no_grad():
-    res = model(embeddings, first_frame)
+    res = model(embeddings, first_frame)    
+    print("Model output shape:", res.shape)
 
