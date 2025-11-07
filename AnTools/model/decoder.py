@@ -2,7 +2,7 @@ import torch
 from torchvision.ops import nms
 
 class DecoderV1(torch.nn.Module):
-    def __init__(self, iou_threshold=0.5, score_threshold=-2, topk=1):
+    def __init__(self, iou_threshold=1.0, score_threshold=-2, topk=1):
         super().__init__()
         self.iou_threshold = iou_threshold
         self.score_threshold = score_threshold
@@ -28,6 +28,7 @@ class DecoderV1(torch.nn.Module):
             # threshold
             keep = scores > self.score_threshold
             boxes, scores = boxes[keep], scores[keep]
+            print(boxes)
 
             if scores.numel() == 0:
                 boxes_list.append(torch.zeros((0, 4)))

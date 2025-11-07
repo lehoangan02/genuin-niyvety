@@ -87,7 +87,8 @@ if __name__ == "__main__":
         test_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
             frame_transform=frame_transform,
-            phase="inference"
+            phase="inference",
+            query_type=args.query_type
         )
 
         decoder = DecoderV1()

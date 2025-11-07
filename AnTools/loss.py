@@ -5,7 +5,7 @@ import torch.nn.functional as F
 class FocalLoss(nn.Module):
     """
     Standard Focal loss for binary (0/1) targets.
-    Expects pred (logits) and gt (0 or 1) with same shape.
+    Expects pred (prob in (0, 1)) and gt (0 or 1) with same shape.
     
     alpha (gamma in the original paper) is the focusing parameter.
     """
@@ -15,14 +15,13 @@ class FocalLoss(nn.Module):
         self.eps = eps
 
     def forward(self, pred, gt):
-        # pred: logits. Convert to probabilities safely
-        pred_prob = torch.clamp(torch.sigmoid(pred), self.eps, 1.0 - self.eps)
+        pred = torch.clamp(pred, self.eps, 1.0 - self.eps)
 
         pos_mask = gt.eq(1).float()
         neg_mask = gt.lt(1).float()
 
-        pos_loss = torch.log(pred_prob) * torch.pow(1 - pred_prob, self.alpha) * pos_mask
-        neg_loss = torch.log(1 - pred_prob) * torch.pow(pred_prob, self.alpha) * neg_mask
+        pos_loss = torch.log(pred) * torch.pow(1 - pred, self.alpha) * pos_mask
+        neg_loss = torch.log(1 - pred) * torch.pow(pred, self.alpha) * neg_mask
 
         pos_loss = pos_loss.sum()
         neg_loss = neg_loss.sum()

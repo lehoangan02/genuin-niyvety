@@ -423,15 +423,15 @@ class CombinedModelV5(nn.Module):
         x = self.up1(f3, f2)
         filter_prompt = self.firstFilter(query_embeddings)
         x = self.up2(x, f1, filter_prompt)
-        print("here")
+        # print("here")
 
         # print x shape
-        print("x shape before up3:", x.shape)
+        # print("x shape before up3:", x.shape)
         # generate the first filter prompt from the query embeddings
         # print query_embeddings shape
-        print("first filter shape:", filter_prompt.shape)
+        # print("first filter shape:", filter_prompt.shape)
         filter_prompt = self.secondFilter(filter_prompt)
-        print("filter_prompt shape:", filter_prompt.shape)
+        # print("filter_prompt shape:", filter_prompt.shape)
         x = self.up3(x, f0, filter_prompt)
         output = self.head(x)
         return output
