@@ -544,14 +544,14 @@ def main() -> None:
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
     batch_size, num_queries, embedding_dim = 2, 3, 512
-    height, width = 224, 224
+    height, width = 512, 224
 
     query_embeddings = torch.randn(
         batch_size, num_queries, embedding_dim, device=device
     )
     frame_batch = torch.randn(batch_size, 3, height, width, device=device)
 
-    model = CombinedModelV4(embedding_dim=embedding_dim).to(device)
+    model = CombinedModelV6(embedding_dim=embedding_dim).to(device)
     model.eval()
 
     with torch.no_grad():

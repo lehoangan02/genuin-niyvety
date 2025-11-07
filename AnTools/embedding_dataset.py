@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset
+from gaussian import calculate_gaussian_radius, apply_gaussian
 
 
 class EmbeddingDetDataset(Dataset):
@@ -76,6 +77,13 @@ class EmbeddingDetDataset(Dataset):
             target = {}
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
+            
+            output_height = h // 4
+            output_width = w // 4
+            heatmap = torch.zeros((1, output_height, output_width), dtype=torch.float32)
+            gaussian_radius = calculate_gaussian_radius(output_height, output_width)
+            apply_gaussian(heatmap, (cx / 4.0, cy / 4.0), gaussian_radius)
+            target["heatmap"] = heatmap
             return query_tensor, frame_image, target
         elif self.phase == 'inference':
             return video_name, query_names, query_tensor, frame_name, frame_image

@@ -4,25 +4,23 @@ import numpy as np
 
 
 def calculate_gaussian_radius(
-    det_size: Tuple[float, float], min_overlap: float = 0.7
+    box_height: float, box_width: float, min_overlap: float = 0.7
 ) -> float:
-    height, width = det_size
-
     coeff_a_case1 = 1.0
-    coeff_b_case1 = height + width
-    coeff_c_case1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+    coeff_b_case1 = box_height + box_width
+    coeff_c_case1 = box_width * box_height * (1 - min_overlap) / (1 + min_overlap)
     discriminant_case1 = np.sqrt(coeff_b_case1**2 - 4 * coeff_a_case1 * coeff_c_case1)
     radius_case1 = (coeff_b_case1 + discriminant_case1) / 2
 
     coeff_a_case2 = 4.0
-    coeff_b_case2 = 2 * (height + width)
-    coeff_c_case2 = (1 - min_overlap) * width * height
+    coeff_b_case2 = 2 * (box_height + box_width)
+    coeff_c_case2 = (1 - min_overlap) * box_width * box_height
     discriminant_case2 = np.sqrt(coeff_b_case2**2 - 4 * coeff_a_case2 * coeff_c_case2)
     radius_case2 = (coeff_b_case2 + discriminant_case2) / 2
 
     coeff_a_case3 = 4 * min_overlap
-    coeff_b_case3 = -2 * min_overlap * (height + width)
-    coeff_c_case3 = (min_overlap - 1) * width * height
+    coeff_b_case3 = -2 * min_overlap * (box_height + box_width)
+    coeff_c_case3 = (min_overlap - 1) * box_width * box_height
     discriminant_case3 = np.sqrt(coeff_b_case3**2 - 4 * coeff_a_case3 * coeff_c_case3)
     radius_case3 = (coeff_b_case3 + discriminant_case3) / 2
     return min(radius_case1, radius_case2, radius_case3)

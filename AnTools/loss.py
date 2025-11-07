@@ -19,6 +19,8 @@ class FocalLoss(nn.Module):
 
         pos_mask = gt.eq(1).float()
         neg_mask = gt.lt(1).float()
+        
+        neg_weights = torch.pow(1 - gt, 4)
 
         pos_loss = torch.log(pred) * torch.pow(1 - pred, self.alpha) * pos_mask
         neg_loss = torch.log(1 - pred) * torch.pow(pred, self.alpha) * neg_mask
@@ -99,7 +101,7 @@ class LossAll(nn.Module):
                 cx_int = max(0, min(cx_int, W - 1))
                 cy_int = max(0, min(cy_int, H - 1))
 
-                gt_tensor[b, 0, cy_int, cx_int] = 1.0
+                gt_tensor[b, 0, :, :] = targets[b]["heatmap"]   
                 
                 gt_tensor[b, 1, cy_int, cx_int] = x_center_rel
                 gt_tensor[b, 2, cy_int, cx_int] = y_center_rel
