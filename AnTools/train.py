@@ -122,7 +122,7 @@ class TrainModule(object):
                 )
 
             self.save_model(
-                os.path.join(save_path, "model_last.pth"),
+                os.path.join(save_path, f"model_{epoch}.pth"),
                 epoch,
                 self.model,
                 self.optimizer
