@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import timm
 from transformers import CLIPModel
-from .up_scale_module import NoPromptUpScaleModule
+from .module_parts import *
 
 
 class CombinedModelV1(nn.Module):
@@ -341,12 +341,99 @@ class CombinedModelV4(nn.Module):
 
         # Fuse query information into the coarsest feature map.
         f3 = f3 + query_modulation
-
+        
         x = self.up1(f3, f2)
         x = self.up2(x, f1)
         x = self.up3(x, f0)
         output = self.head(x)
 
+        return output
+
+class CombinedModelV5(nn.Module):
+    """Variant that consumes precomputed SPA query embeddings instead of raw images.
+    Then compute the reweigting module to adjust the embedding of the main frame to better detect the object
+    """
+    def __init__(
+        self,
+        embedding_dim: int = 512,
+        fastvit_model_id: str = "fastvit_sa12",
+        freeze_encoder: bool = True,
+    ) -> None:
+        super().__init__()
+
+        self.embedding_dim = embedding_dim
+
+        # FastViT backbone that returns intermediate feature maps.
+        self.fastvit_backbone = timm.create_model(
+            fastvit_model_id,
+            pretrained=True,
+            features_only=True,
+        )
+
+        if freeze_encoder:
+            for param in self.fastvit_backbone.parameters():
+                param.requires_grad = False
+
+        # Grab channel dimensions to guarantee correct projections.
+        feature_channels = self.fastvit_backbone.feature_info.channels()
+        if len(feature_channels) < 4:
+            raise RuntimeError("Expected at least 4 feature maps from FastViT backbone")
+
+        c3, c2, c1, c0 = (
+            feature_channels[3],
+            feature_channels[2],
+            feature_channels[1],
+            feature_channels[0],
+        )
+        self.up1 = NoPromptUpScaleModule(c_low=c3, c_high=c2, c_out=c2)
+        self.firstFilter = FirstFilterGeneratorV1()
+        self.up2 = PromptUpScaleModuleV1(c_low=c2, c_high=c1, c_out=c1)
+        self.secondFilter = SecondFilterGeneratorV1()
+        self.up3 = PromptUpScaleModuleV1(c_low=c1, c_high=c0, c_out=c0)
+        self.head = nn.Sequential(
+            nn.Conv2d(c0, 16, kernel_size=3, padding=1),
+            nn.BatchNorm2d(16),
+            nn.LeakyReLU(0.01, inplace=True),
+            nn.Conv2d(16, 5, kernel_size=3, padding=1)
+        )
+
+
+    def forward(
+        self, query_embeddings: torch.Tensor, frame_batch: torch.Tensor
+    ) -> torch.Tensor:
+        """
+        Args:
+            query_embeddings: 3 Tensor shaped ([1, 1024, 14, 14]).
+            frame_batch: Tensor shaped [B, C, H, W].
+
+        Returns:
+            Tensor shaped [B, 5, H_out, W_out] identical to CombinedModelV3.
+        """
+        # print query_embeddings shape
+        print("query_embeddings shape:", query_embeddings.shape)
+
+        # Produce backbone features as in previous variants.
+        frame_features = self.fastvit_backbone(frame_batch)
+        f3, f2, f1, f0 = (
+            frame_features[3],
+            frame_features[2],
+            frame_features[1],
+            frame_features[0],
+        )
+        x = self.up1(f3, f2)
+        filter_prompt = self.firstFilter(query_embeddings)
+        x = self.up2(x, f1, filter_prompt)
+        print("here")
+
+        # print x shape
+        print("x shape before up3:", x.shape)
+        # generate the first filter prompt from the query embeddings
+        # print query_embeddings shape
+        print("first filter shape:", filter_prompt.shape)
+        filter_prompt = self.secondFilter(filter_prompt)
+        print("filter_prompt shape:", filter_prompt.shape)
+        x = self.up3(x, f0, filter_prompt)
+        output = self.head(x)
         return output
 
 

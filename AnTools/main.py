@@ -5,14 +5,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description='banpath model')
     parser.add_argument('--num_epoch', type=int, default=1, help='Number of epochs')
     parser.add_argument('--batch_size', type=int, default=8, help='Batch size')
-    parser.add_argument('--num_workers', type=int, default=4, help='Number of data loader workers')
-    parser.add_argument('--init_lr', type=float, default=1e-2, help='Initial learning rate')
+    parser.add_argument('--num_workers', type=int, default=0, help='Number of data loader workers')
+    parser.add_argument('--init_lr', type=float, default=1e-1, help='Initial learning rate')
     parser.add_argument('--resume', type=str, default=None, help='Path to resume training from a checkpoint')
     parser.add_argument('--phase', type=str, default='inference', help='Phase choice= {train, test, encode}')
     parser.add_argument('--data_dir', type=str, default='./../DATA', help='Path to dataset root directory')
     parser.add_argument('--encoder', type=str, default='clip-vit-base-patch32', help='Phase choice= {clip-vit-base-patch32, mobile-clip-B, mobile-clip-BLT, SPA}')
+    parser.add_argument('--query_type', type=str, default='embeddings_clip-vit-base-patch32', help='Choice= {embeddings_clip-vit-base-patch32, embeddings_mobile-clip-BLT, embeddings_SPA/spa_wo_cls}')
     return parser.parse_args()
-
 
 if __name__ == "__main__":
     args = parse_args()
@@ -26,7 +26,7 @@ if __name__ == "__main__":
         import torchvision.transforms as T
         from model import DecoderV1
         import torch
-        model = CombinedModelV4() 
+        model = CombinedModelV5() 
         # --- 1. Define Device ---
         device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {device}")
@@ -44,7 +44,9 @@ if __name__ == "__main__":
 
         train_dataset = EmbeddingDetDataset(
             data_root_dir=data_root,
-            frame_transform=frame_transform
+            frame_transform=frame_transform,
+            query_type=args.query_type,
+            phase=args.phase
         )
 
         train_loader = DataLoader(
@@ -66,7 +68,7 @@ if __name__ == "__main__":
         import torchvision.transforms as T
         from model import DecoderV1
         import torch
-        model = CombinedModelV4() 
+        model = CombinedModelV5() 
         # --- 1. Define Device ---
         device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
         print(f"Using device: {device}")

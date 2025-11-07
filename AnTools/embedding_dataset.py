@@ -12,11 +12,12 @@ class EmbeddingDetDataset(Dataset):
     query images (for CLIP) and frame images (for FastViT).
     """
 
-    def __init__(self, data_root_dir, frame_transform=None, phase="train"):
+    def __init__(self, data_root_dir, frame_transform=None, phase="train", query_type="embeddings_clip-vit-base-patch32"):
         self.phase = phase
+        print("Loading embeddings from type:", query_type)
         self.frame_dir = os.path.join(data_root_dir, "frames")
         self.embedding_dir = os.path.join(
-            data_root_dir, "embeddings_clip-vit-base-patch32"
+            data_root_dir, query_type
         )
         if self.phase == "train":
             annot_file_path = os.path.join(data_root_dir, "label_train.txt")

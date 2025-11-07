@@ -17,6 +17,6 @@ device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is
 print(f"Using device: {device}")
 
 # load model
-model = CombinedModelV4().to(device)
+model = CombinedModelV5().to(device)
 # save model weights
-torch.save(model.state_dict(), "weights/model_last_v4.pth")
+torch.save(model.state_dict(), "weights/model_last_v5.pth")

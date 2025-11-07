@@ -14,9 +14,10 @@ image = cv2.imread(image_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 # Preprocess image
-# image_resized = cv2.resize(image, (224, 224))
 image_tensor = torch.from_numpy(image).permute(2, 0, 1).unsqueeze(0).float() / 255.0
 image_tensor = image_tensor.to(device)
+# print image tensor shape
+print("Input image tensor shape:", image_tensor.shape)
 
 # Inference
 with torch.no_grad():
