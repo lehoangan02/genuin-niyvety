@@ -113,7 +113,7 @@ class TrainModule(object):
 
             np.savetxt(os.path.join(save_path, "train_loss.txt"), train_loss, fmt="%.6f")
 
-            if epoch % 5 == 0 or epoch > 20:
+            if epoch % 1 == 0 or epoch > 20:
                 self.save_model(
                     os.path.join(save_path, f"model_{epoch}.pth"),
                     epoch,
