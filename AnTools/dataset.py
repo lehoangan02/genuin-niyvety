@@ -54,11 +54,12 @@ class FewShotDetDataset(Dataset):
 
         # --- Convert bbox from (x1, y1, x2, y2) → (cx, cy, w, h) ---
         x1, y1, x2, y2 = bbox_data[1:]
-        cx = (x1 + x2) / 2.0
-        cy = (y1 + y2) / 2.0
+        # cx = (x1 + x2) / 2.0
+        # cy = (y1 + y2) / 2.0
         w = x2 - x1
         h = y2 - y1
-        bbox_converted = [cx, cy, w, h]
+        # bbox_converted = [cx, cy, w, h]
+        bbox_converted = [w, h]
         
         # Format the target
         if self.phase == 'train':

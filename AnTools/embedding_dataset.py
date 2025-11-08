@@ -73,7 +73,7 @@ class EmbeddingDetDataset(Dataset):
             cy = (y1 + y2) / 2.0
             w = x2 - x1
             h = y2 - y1
-            bbox_converted = [cx, cy, w, h]
+            bbox_converted = [w, h]
             target = {}
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)

@@ -394,7 +394,7 @@ class CombinedModelV5(nn.Module):
             nn.Conv2d(c0, 16, kernel_size=3, padding=1),
             nn.BatchNorm2d(16),
             nn.LeakyReLU(0.01, inplace=True),
-            nn.Conv2d(16, 5, kernel_size=3, padding=1)
+            nn.Conv2d(16, 3, kernel_size=3, padding=1)
         )
 
 
@@ -482,7 +482,7 @@ class CombinedModelV6(nn.Module):
             nn.Conv2d(c0, c0 // 2, kernel_size=3, padding=1),
             nn.BatchNorm2d(c0 // 2),
             nn.ReLU(inplace=True),
-            nn.Conv2d(c0 // 2, 4,kernel_size=3, padding=1)
+            nn.Conv2d(c0 // 2, 2,kernel_size=3, padding=1)
         )
         self.cls_head = nn.Sequential(
             nn.Conv2d(c0, 1,kernel_size=1),
