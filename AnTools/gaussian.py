@@ -49,9 +49,13 @@ def apply_gaussian(
     x, y = int(center[0]), int(center[1])
 
     height, width = heatmap.shape[0:2]
+    height = int(height)
+    width = int(width)
 
-    left, right = min(x, radius), min(width - x, radius + 1)
-    top, bottom = min(y, radius), min(height - y, radius + 1)
+    left, right = int(min(x, radius)), int(min(width - x, radius + 1))
+    top, bottom = int(min(y, radius)), int(min(height - y, radius + 1))
+
+    radius = int(radius)
 
     masked_heatmap = heatmap[y - top : y + bottom, x - left : x + right]
     masked_gaussian = gaussian_kernel[

@@ -145,7 +145,8 @@ class TrainModule(object):
             for t in targets:
                 targets_gpu.append({
                     'boxes': t['boxes'].to(self.device, non_blocking=True),
-                    'labels': t['labels'].to(self.device, non_blocking=True)
+                    'labels': t['labels'].to(self.device, non_blocking=True),
+                    'heatmap': t['heatmap'].to(self.device, non_blocking=True)
                 })
             targets = targets_gpu # Use the list of tensors on GPU
 

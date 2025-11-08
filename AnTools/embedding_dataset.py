@@ -63,8 +63,6 @@ class EmbeddingDetDataset(Dataset):
         # Stack the 3 query embeddings to build (num_queries, embedding_dim)
         query_tensor = torch.concat(query_embeddings)
 
-        
-
         # Format the target
         if self.phase == 'train':
             # --- Convert bbox from (x1, y1, x2, y2) → (cx, cy, w, h) ---
@@ -78,12 +76,12 @@ class EmbeddingDetDataset(Dataset):
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
             
-            output_height = h // 4
-            output_width = w // 4
-            heatmap = torch.zeros((1, output_height, output_width), dtype=torch.float32)
+            output_height = int(w // 4)
+            output_width = int(h // 4)
+            heatmap = np.zeros((1, frame_image.shape[1] // 4, frame_image.shape[2] // 4), dtype=np.float32)
             gaussian_radius = calculate_gaussian_radius(output_height, output_width)
             apply_gaussian(heatmap, (cx / 4.0, cy / 4.0), gaussian_radius)
-            target["heatmap"] = heatmap
+            target["heatmap"] = torch.from_numpy(heatmap)
             return query_tensor, frame_image, target
         elif self.phase == 'inference':
             return video_name, query_names, query_tensor, frame_name, frame_image

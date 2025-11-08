@@ -89,12 +89,13 @@ class LossAll(nn.Module):
 
                 width_rel = gt_width / frame_W
                 height_rel = gt_height / frame_H
-
+                # print(targets)
                 heatmap = targets[b]["heatmap"]
 
                 gt_tensor[b, 0, :, :] = heatmap
-
-                _, cx_feat, cy_feat = torch.argwhere(heatmap.eq(1).float())[0]
+                
+                coord = torch.argmax(heatmap)
+                cy_feat, cx_feat = divmod(coord.item(), heatmap.shape[1])
                 cx_int = int(cx_feat)
                 cy_int = int(cy_feat)
                 cx_int = max(0, min(cx_int, W - 1))
