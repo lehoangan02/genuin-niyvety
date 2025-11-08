@@ -410,7 +410,7 @@ class CombinedModelV5(nn.Module):
             Tensor shaped [B, 5, H_out, W_out] identical to CombinedModelV3.
         """
         # print query_embeddings shape
-        print("query_embeddings shape:", query_embeddings.shape)
+        # print("query_embeddings shape:", query_embeddings.shape)
 
         # Produce backbone features as in previous variants.
         frame_features = self.fastvit_backbone(frame_batch)
