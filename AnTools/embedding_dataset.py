@@ -78,10 +78,10 @@ class EmbeddingDetDataset(Dataset):
             
             output_height = int(w // 4)
             output_width = int(h // 4)
-            heatmap = np.zeros((1, frame_image.shape[1] // 4, frame_image.shape[2] // 4), dtype=np.float32)
+            heatmap = np.zeros((frame_image.shape[1] // 4, frame_image.shape[2] // 4), dtype=np.float32)
             gaussian_radius = calculate_gaussian_radius(output_height, output_width)
             apply_gaussian(heatmap, (cx / 4.0, cy / 4.0), gaussian_radius)
-            target["heatmap"] = torch.from_numpy(heatmap)
+            target["heatmap"] = torch.from_numpy(heatmap).unsqueeze(0)
             return query_tensor, frame_image, target
         elif self.phase == 'inference':
             return video_name, query_names, query_tensor, frame_name, frame_image
