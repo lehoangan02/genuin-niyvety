@@ -9,9 +9,9 @@ class DecoderV1(torch.nn.Module):
         self.topk = topk
 
     def forward(self, preds):
-        # preds: [B, 5, H, W] = (score + 4 box coords)
+        # preds: [B, 3, H, W] = (score + width + height)
         B, C, H, W = preds.shape
-        assert C >= 5, "Expected at least 5 channels (1 score + 4 coords)"
+        assert C >= 5, "Expected at least 3 channels (1 score + 2 width height)"
 
         boxes_list = []
         scores_list = []
@@ -19,15 +19,18 @@ class DecoderV1(torch.nn.Module):
         for b in range(B):
             pred = preds[b]
             score_map = pred[0]
-            box_map = pred[1:5]
+            box_map = pred[1:3]
 
             # flatten
             scores = score_map.reshape(-1)
-            boxes = box_map.reshape(4, -1).permute(1, 0)
+            boxes_wh = box_map.reshape(2, -1).permute(1, 0)
+            keep = score_map > self.score_threshold
+            boxes_wh, score_map = boxes_wh[keep], score_map[keep]
+            
+            boxes = torch.zeros((W * H, 4), dtype=torch.float32)
+            boxes 
 
             # threshold
-            keep = scores > self.score_threshold
-            boxes, scores = boxes[keep], scores[keep]
 
             if scores.numel() == 0:
                 boxes_list.append(torch.zeros((0, 4)))

@@ -45,8 +45,7 @@ class LossAll(nn.Module):
     Loss wrapper that matches your model output layout for CombinedModelV3:
 
     Channel 0 -> confidence (Focal Loss)
-    Channels 1-2 -> center (relative x, y)
-    Channels 3-4 -> width/height (relative w, h)
+    Channels 1-2 -> width/height (relative w, h)
 
     Assumes at most ONE object per frame.
     """
@@ -129,7 +128,6 @@ class LossAll(nn.Module):
 
         # Normalize by number of positive boxes
         num_pos = max(1.0, num_pos)
-
         loss_wh = self.smooth_l1(wh_pred_pos, wh_gt_pos) / num_pos
 
         # --- 3. Combine Losses ---
