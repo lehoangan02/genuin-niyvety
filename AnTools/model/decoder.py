@@ -22,8 +22,8 @@ class DecoderV1(torch.nn.Module):
             box_map = pred[1:3]
 
             scores = score_map.reshape(-1)
-            heights = box_map[0].reshape(-1)
-            widths = box_map[1].reshape(-1)
+            widths = box_map[0].reshape(-1)
+            heights = box_map[1].reshape(-1)
 
             grid_y, grid_x = torch.meshgrid(
                 torch.arange(H, device=pred.device),
