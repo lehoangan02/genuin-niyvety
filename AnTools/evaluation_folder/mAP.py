@@ -44,7 +44,8 @@ class mAPCalculator:
                 frame_file = parts[4]
                 # Extract frame number robustly (e.g., frame00716_1.jpg → 716)
                 frame_num = int(frame_file.split("frame")[-1].split("_")[0])
-                has_obj = int(parts[5])
+                has_obj = 1
+                # has_obj = int(parts[5])
                 x1, y1, x2, y2 = map(float, parts[6:])
                 data.setdefault(video_id, {})[frame_num] = (has_obj, [x1, y1, x2, y2])
         return data

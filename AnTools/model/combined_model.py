@@ -434,6 +434,10 @@ class CombinedModelV5(nn.Module):
         # print("filter_prompt shape:", filter_prompt.shape)
         x = self.up3(x, f0, filter_prompt)
         output = self.head(x)
+        output = self.head(x)
+        output = output.clone()
+        output[:, 0, :, :] = torch.sigmoid(output[:, 0, :, :])
+
         return output
 
 
