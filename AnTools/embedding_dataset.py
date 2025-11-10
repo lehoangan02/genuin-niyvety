@@ -76,8 +76,8 @@ class EmbeddingDetDataset(Dataset):
             target['boxes'] = torch.tensor([bbox_converted], dtype=torch.float32)
             target['labels'] = torch.tensor([bbox_data[0]], dtype=torch.int64)
             
-            output_height = int(w // 4)
-            output_width = int(h // 4)
+            output_height = int(h // 4)
+            output_width = int(w // 4)
             heatmap = np.zeros((frame_image.shape[1] // 4, frame_image.shape[2] // 4), dtype=np.float32)
             if (bbox_data[0] == 1):
                 gaussian_radius = calculate_gaussian_radius(output_height, output_width)
