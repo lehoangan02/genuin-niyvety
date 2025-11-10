@@ -228,3 +228,4 @@ DATA/frame_labels.txt
 *.pth
 *.npy
 /spa_env
+/DATA/test
