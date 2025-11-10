@@ -4,13 +4,6 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    """
-    Standard Focal loss for binary (0/1) targets.
-    Expects pred (prob in (0, 1)) and gt (0 or 1) with same shape.
-
-    alpha (gamma in the original paper) is the focusing parameter.
-    """
-
     def __init__(self, alpha=2.0, eps=1e-6):
         super(FocalLoss, self).__init__()
         self.alpha = alpha
@@ -19,24 +12,39 @@ class FocalLoss(nn.Module):
     def forward(self, pred, gt):
         pred = torch.clamp(pred, self.eps, 1.0 - self.eps)
 
-        pos_mask = gt.eq(1).float()
-        neg_mask = gt.lt(1).float()
+        batch_size = pred.shape[0]
 
-        neg_weights = torch.pow(1 - gt, 4)
+        total_pos_loss = 0.0
+        total_neg_loss = 0.0
+        num_pos = 0.0
 
-        pos_loss = torch.log(pred) * torch.pow(1 - pred, self.alpha) * pos_mask
-        neg_loss = torch.log(1 - pred) * torch.pow(pred, self.alpha) * neg_mask
+        for b in range(batch_size):
+            gt_b = gt[b]
+            pred_b = pred[b]
 
-        pos_loss = pos_loss.sum()
-        neg_loss = neg_loss.sum()
-        num_pos = pos_mask.sum()
+            bump = torch.max(gt_b)
+            if bump == 0.0:
+                pos_mask = torch.zeros_like(gt_b)
+                neg_mask = torch.ones_like(gt_b)
+            else:
+                pos_mask = (gt_b == bump).float()
+                neg_mask = (gt_b < bump).float()
 
-        if num_pos == 0:
-            # no positive samples, only negative loss
-            loss = -neg_loss
+            neg_weights = torch.pow(1 - gt_b, 4)
+
+            pos_loss = torch.log(pred_b) * torch.pow(1 - pred_b, self.alpha) * pos_mask
+            neg_loss = torch.log(1 - pred_b) * torch.pow(pred_b, self.alpha) * neg_mask * neg_weights
+
+            total_pos_loss += pos_loss.sum()
+            total_neg_loss += neg_loss.sum()
+            num_pos += pos_mask.sum()
+
+        print(total_pos_loss, total_neg_loss)
+        if num_pos == 0.0:
+            loss = -total_neg_loss
         else:
-            # normalize by number of positive samples
-            loss = -(pos_loss + neg_loss) / num_pos
+            loss = -(total_pos_loss + total_neg_loss) / num_pos
+
         return loss
 
 
@@ -71,7 +79,7 @@ class LossAll(nn.Module):
 
         # --- 1. Build Ground Truth Tensor ---
 
-        B, C_pred, H, W = preds.shape
+        B, _, H, W = preds.shape
         _, _, frame_H, frame_W = frame_tensor.shape
 
         gt_tensor = torch.zeros(B, 3, H, W, device=preds.device)
@@ -89,15 +97,12 @@ class LossAll(nn.Module):
 
                 width_rel = gt_width / frame_W
                 height_rel = gt_height / frame_H
-                # print(width_rel, height_rel)
-                # print(targets)
                 heatmap = targets[b]["heatmap"]
-                # print(torch.max(heatmap))
 
                 gt_tensor[b, 0, :, :] = heatmap
                 
                 coord = torch.argmax(heatmap)
-                cy_feat, cx_feat = divmod(coord.item(), heatmap.shape[1])
+                _, cy_feat, cx_feat = torch.unravel_index(coord, heatmap.shape)
                 cx_int = int(cx_feat)
                 cy_int = int(cy_feat)
                 cx_int = max(0, min(cx_int, W - 1))
@@ -114,6 +119,10 @@ class LossAll(nn.Module):
         # Confidence: Focal loss on the confidence map
         conf_pred = preds[:, 0:1, :, :]
         conf_gt = gt_tensor[:, 0:1, :, :]
+        print("here",preds[0, :, 1, 87])
+        print("here",gt_tensor[0, :, 1, 87])
+        print("here",preds[0, :, 2, 87])
+        print("here",gt_tensor[0, :, 2, 87])
         loss_conf = self.focal(conf_pred, conf_gt)
 
         # --- Regression Loss (Center & WH) ---

@@ -20,8 +20,8 @@ class DecoderV1(torch.nn.Module):
             pred = preds[b]
             score_map = pred[0]
             box_map = pred[1:3]
-            print(score_map)
-            print(box_map)
+            print(score_map.max())
+            print(box_map[:, 1, 87])
 
             scores = score_map.reshape(-1)
             widths = box_map[0].reshape(-1)

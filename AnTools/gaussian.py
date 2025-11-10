@@ -31,26 +31,25 @@ def get_2d_gaussian(shape: Tuple[int, int], sigma: float = 1) -> np.ndarray:
     y, x = np.ogrid[-half_height : half_height + 1, -half_width : half_width + 1]
 
     gaussian_kernel = np.exp(-(x * x + y * y) / (2 * sigma * sigma))
-    gaussian_kernel[
-        gaussian_kernel < np.finfo(gaussian_kernel.dtype).eps * gaussian_kernel.max()
-    ] = 0
+    gaussian_kernel[gaussian_kernel < np.finfo(gaussian_kernel.dtype).eps * gaussian_kernel.max()] = 0
+    gaussian_kernel /= gaussian_kernel.max()
     return gaussian_kernel
 
 
 def apply_gaussian(
     heatmap: np.ndarray,
-    center: Tuple[float, float],
+    center_x: float,
+    center_y: float,
     radius: int,
     scale: float = 1,
 ) -> np.ndarray:
     diameter = 2 * radius + 1
     gaussian_kernel = get_2d_gaussian((diameter, diameter), sigma=diameter / 6)
 
-    x, y = int(center[0]), int(center[1])
+    x, y = int(center_x), int(center_y)
 
     height, width = heatmap.shape[0:2]
-    height = int(height)
-    width = int(width)
+    height, width = int(height), int(width)
 
     left, right = int(min(x, radius)), int(min(width - x, radius + 1))
     top, bottom = int(min(y, radius)), int(min(height - y, radius + 1))
@@ -58,33 +57,30 @@ def apply_gaussian(
     radius = int(radius)
 
     masked_heatmap = heatmap[y - top : y + bottom, x - left : x + right]
-    masked_gaussian = gaussian_kernel[
-        radius - top : radius + bottom, radius - left : radius + right
-    ]
+    masked_gaussian = gaussian_kernel[radius - top : radius + bottom, radius - left : radius + right]
     if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
         np.maximum(masked_heatmap, masked_gaussian * scale, out=masked_heatmap)
     return heatmap
 
 
 def main() -> None:
-    heatmap_height = 256
+    heatmap_height = 144
     heatmap_width = 256
-    center = [128, 128]
-    min_overlap = 0.7
-    box = [0, 0]
+    center = [1, 87]
+    min_overlap = 0.2
+    box = [3, 15]
     scale = 1
 
     heatmap = np.zeros((heatmap_height, heatmap_width), dtype=np.float32)
 
-    radius = int(np.floor(calculate_gaussian_radius(box[0], box[1], min_overlap)))
-    radius = max(radius, 1)
+    radius = calculate_gaussian_radius(box[0], box[1], min_overlap)
 
-    apply_gaussian(heatmap, (center[0], center[1]), radius, scale=scale)
+    apply_gaussian(heatmap, center[1], center[0], radius, scale=scale)
     print(np.max(heatmap))
 
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(heatmap, cmap="hot", interpolation="nearest")
-    ax.scatter([center[0]], [center[1]], c="cyan", s=25, marker="x")
+    # ax.scatter([center[1]], [center[0]], c="cyan", s=25, marker="x")
     ax.set_title(f"Gaussian heatmap (radius={radius})")
     ax.set_xlabel("x")
     ax.set_ylabel("y")

@@ -52,9 +52,8 @@ def write_results(model, dataset, device, decoder, result_path, print_ps=False, 
                 frame_name = frame_names[i]
                 
                 for box, score in zip(boxes, scores):
-                    cx, cy, w, h = box
-                    x1, y1, x2, y2 = cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
-                    line = " ".join([video_name, *query_list, frame_name, str(score), str(int(x1)), str(int(x2)), str(int(y1)), str(int(y2))]) + "\n"
+                    x1, y1, x2, y2 = box
+                    line = " ".join([video_name, *query_list, frame_name, str(score), str(int(x1)), str(int(y1)), str(int(x2)), str(int(y2))]) + "\n"
                     f.write(line)
 
     if print_ps:
