@@ -89,8 +89,10 @@ class LossAll(nn.Module):
 
                 width_rel = gt_width / frame_W
                 height_rel = gt_height / frame_H
+                # print(width_rel, height_rel)
                 # print(targets)
                 heatmap = targets[b]["heatmap"]
+                # print(torch.max(heatmap))
 
                 gt_tensor[b, 0, :, :] = heatmap
                 
@@ -133,6 +135,8 @@ class LossAll(nn.Module):
 
         # --- 3. Combine Losses ---
         total_loss = self.lambda_conf * loss_conf + self.lambda_wh * loss_wh
+        # print(loss_conf)
+        # print(loss_wh)
 
         # For debugging, you could return a dict:
         # return {

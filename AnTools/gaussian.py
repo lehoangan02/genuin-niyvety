@@ -69,17 +69,18 @@ def apply_gaussian(
 def main() -> None:
     heatmap_height = 256
     heatmap_width = 256
-    center = [0, 0]
+    center = [128, 128]
     min_overlap = 0.7
-    box = [64, 64]
+    box = [0, 0]
     scale = 1
 
     heatmap = np.zeros((heatmap_height, heatmap_width), dtype=np.float32)
 
-    radius = int(np.floor(calculate_gaussian_radius(box, min_overlap)))
+    radius = int(np.floor(calculate_gaussian_radius(box[0], box[1], min_overlap)))
     radius = max(radius, 1)
 
     apply_gaussian(heatmap, (center[0], center[1]), radius, scale=scale)
+    print(np.max(heatmap))
 
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(heatmap, cmap="hot", interpolation="nearest")
