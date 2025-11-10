@@ -21,7 +21,7 @@ class EmbeddingDetDataset(Dataset):
             data_root_dir, query_type
         )
         if self.phase == "train":
-            annot_file_path = os.path.join(data_root_dir, "label_train.txt")
+            annot_file_path = os.path.join(data_root_dir, "label_train.txt_filtered.txt")
         elif self.phase == "inference":
             annot_file_path = os.path.join(data_root_dir, "test_list.txt")
         self.frame_transform = frame_transform

@@ -1,22 +1,14 @@
-# check if there is any duplicate lines in a txt file and show which lines are duplicated
-def has_duplicate_lines(file_path):
-    with open(file_path, 'r') as file:
-        lines = file.readlines()
-        unique_lines = set(lines)
-        if len(lines) != len(unique_lines):
-            print("Duplicate lines found:")
-            for line in unique_lines:
-                if lines.count(line) > 1:
-                    print(f"'{line.strip()}' - {lines.count(line)} times")
-            return True
-        return False
-# Example usage:
-# file_path = 'path/to/your/file.txt'
-# print(has_duplicate_lines(file_path))
+# ===== CONFIG =====
+input_file = "label_train.txt"        # your original txt file
+output_file = "label_train.txt_filtered.txt"    # file to save filtered lines
+# ===================
 
-if __name__ == "__main__":
-    file_path = 'label.txt'  # Replace with your file path
-    if has_duplicate_lines(file_path):
-        print("The file has duplicate lines.")
-    else:
-        print("The file has no duplicate lines.")
+with open(input_file, "r") as f_in, open(output_file, "w") as f_out:
+    for line in f_in:
+        # Skip empty lines
+        if not line.strip():
+            continue
+        
+        # Write only lines that do NOT contain '00000'
+        if "0 0 0 0 0" not in line:
+            f_out.write(line)
