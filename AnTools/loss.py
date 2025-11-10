@@ -4,9 +4,9 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, alpha=2.0, eps=1e-6):
+    def __init__(self, gamma=2.0, eps=1e-6):
         super(FocalLoss, self).__init__()
-        self.alpha = alpha
+        self.gamma = gamma
         self.eps = eps
 
     def forward(self, pred, gt):
@@ -32,8 +32,8 @@ class FocalLoss(nn.Module):
 
             neg_weights = torch.pow(1 - gt_b, 4)
 
-            pos_loss = torch.log(pred_b) * torch.pow(1 - pred_b, self.alpha) * pos_mask
-            neg_loss = torch.log(1 - pred_b) * torch.pow(pred_b, self.alpha) * neg_mask * neg_weights
+            pos_loss = torch.log(pred_b) * torch.pow(1 - pred_b, self.gamma) * pos_mask
+            neg_loss = torch.log(1 - pred_b) * torch.pow(pred_b, self.gamma) * neg_mask * neg_weights
 
             total_pos_loss += pos_loss.sum()
             total_neg_loss += neg_loss.sum()
@@ -62,7 +62,7 @@ class LossAll(nn.Module):
         self, focal_alpha=2.0, lambda_conf=1.0, lambda_center=1.0, lambda_wh=1.0
     ):
         super(LossAll, self).__init__()
-        self.focal = FocalLoss(alpha=focal_alpha)
+        self.focal = FocalLoss(gamma=focal_alpha)
         self.smooth_l1 = nn.SmoothL1Loss(reduction="sum")
 
         self.lambda_conf = lambda_conf
