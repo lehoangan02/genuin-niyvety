@@ -80,7 +80,7 @@ class EmbeddingDetDataset(Dataset):
             output_width = int(w // 4)
             heatmap = np.zeros((frame_image.shape[1] // 4, frame_image.shape[2] // 4), dtype=np.float32)
             if (bbox_data[0] == 1):
-                gaussian_radius = calculate_gaussian_radius(output_height, output_width)
+                gaussian_radius = calculate_gaussian_radius(output_height, output_width, 0.3)
                 apply_gaussian(heatmap, cx / 4.0, cy / 4.0, gaussian_radius)
             target["heatmap"] = torch.from_numpy(heatmap).unsqueeze(0)
             return query_tensor, frame_image, target
