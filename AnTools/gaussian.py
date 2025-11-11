@@ -1,29 +1,16 @@
 from typing import Tuple
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 import numpy as np
 
 
 def calculate_gaussian_radius(
-    box_height: float, box_width: float, min_overlap: float = 0.7
+    box_height: float, box_width: float, overlap: float = 0.7
 ) -> float:
-    coeff_a_case1 = 1.0
-    coeff_b_case1 = box_height + box_width
-    coeff_c_case1 = box_width * box_height * (1 - min_overlap) / (1 + min_overlap)
-    discriminant_case1 = np.sqrt(coeff_b_case1**2 - 4 * coeff_a_case1 * coeff_c_case1)
-    radius_case1 = (coeff_b_case1 + discriminant_case1) / 2
-
-    coeff_a_case2 = 4.0
-    coeff_b_case2 = 2 * (box_height + box_width)
-    coeff_c_case2 = (1 - min_overlap) * box_width * box_height
-    discriminant_case2 = np.sqrt(coeff_b_case2**2 - 4 * coeff_a_case2 * coeff_c_case2)
-    radius_case2 = (coeff_b_case2 + discriminant_case2) / 2
-
-    coeff_a_case3 = 4 * min_overlap
-    coeff_b_case3 = -2 * min_overlap * (box_height + box_width)
-    coeff_c_case3 = (min_overlap - 1) * box_width * box_height
-    discriminant_case3 = np.sqrt(coeff_b_case3**2 - 4 * coeff_a_case3 * coeff_c_case3)
-    radius_case3 = (coeff_b_case3 + discriminant_case3) / 2
-    return min(radius_case1, radius_case2, radius_case3)
+    box_area = box_height * box_width
+    gaussian_area = overlap * box_area
+    radius = np.sqrt(gaussian_area / np.pi)
+    return float(radius)
 
 
 def get_2d_gaussian(shape: Tuple[int, int], sigma: float = 1) -> np.ndarray:
@@ -67,18 +54,30 @@ def main() -> None:
     heatmap_height = 144
     heatmap_width = 256
     center = [1, 87]
-    min_overlap = 0.3
+    overlap = 1.3
     box = [3, 15]
     scale = 1
 
     heatmap = np.zeros((heatmap_height, heatmap_width), dtype=np.float32)
 
-    radius = calculate_gaussian_radius(box[0], box[1], min_overlap)
+    radius = calculate_gaussian_radius(box[0], box[1], overlap)
 
     apply_gaussian(heatmap, center[1], center[0], radius, scale=scale)
 
-    fig, ax = plt.subplots(figsize=(6, 6))
+    _, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(heatmap, cmap="hot", interpolation="nearest")
+    box_x = center[1] - box[1] / 2
+    box_y = center[0] - box[0] / 2
+    ax.add_patch(
+        Rectangle(
+            (box_x, box_y),
+            box[1],
+            box[0],
+            linewidth=1.5,
+            edgecolor="cyan",
+            facecolor="none",
+        )
+    )
     # ax.scatter([center[1]], [center[0]], c="cyan", s=25, marker="x")
     ax.set_title(f"Gaussian heatmap (radius={radius})")
     ax.set_xlabel("x")
