@@ -16,7 +16,7 @@ class mAPCalculator:
         self.DATA_PATH = DATA_PATH
 
         # 🔗 File paths
-        self.GROUND_TRUTH_PATH = os.path.join(self.DATA_PATH, "label_val.txt")       # your GT file
+        self.GROUND_TRUTH_PATH = os.path.join(self.DATA_PATH, "label_train.txt")       # your GT file
         self.PREDICTIONS_PATH  = os.path.join(self.DATA_PATH, "results.txt")  # your prediction file
         # ================================================================
 
