@@ -4,8 +4,9 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2.0, eps=1e-6):
+    def __init__(self, alpha=0.9, gamma=2.0, eps=1e-6):
         super(FocalLoss, self).__init__()
+        self.alpha = alpha
         self.gamma = gamma
         self.eps = eps
 
@@ -27,19 +28,18 @@ class FocalLoss(nn.Module):
                 pos_mask = torch.zeros_like(gt_b)
                 neg_mask = torch.ones_like(gt_b)
             else:
-                pos_mask = (gt_b == bump).float()
-                neg_mask = (gt_b < bump).float()
+                pos_mask = (gt_b == 1).float()
+                neg_mask = (gt_b < 1).float()
 
             neg_weights = torch.pow(1 - gt_b, 4)
 
-            pos_loss = torch.log(pred_b) * torch.pow(1 - pred_b, self.gamma) * pos_mask
-            neg_loss = torch.log(1 - pred_b) * torch.pow(pred_b, self.gamma) * neg_mask * neg_weights
+            pos_loss = torch.log(pred_b) * torch.pow(1 - pred_b, self.gamma) * pos_mask * self.alpha
+            neg_loss = torch.log(1 - pred_b) * torch.pow(pred_b, self.gamma) * neg_mask * neg_weights * (1 - self.alpha)
 
             total_pos_loss += pos_loss.sum()
             total_neg_loss += neg_loss.sum()
             num_pos += pos_mask.sum()
 
-        print(total_pos_loss, total_neg_loss)
         if num_pos == 0.0:
             loss = -total_neg_loss
         else:
@@ -59,10 +59,10 @@ class LossAll(nn.Module):
     """
 
     def __init__(
-        self, focal_alpha=2.0, lambda_conf=1.0, lambda_center=1.0, lambda_wh=1.0
+        self, focal_gamma=2.0, lambda_conf=1.0, lambda_center=1.0, lambda_wh=1.0
     ):
         super(LossAll, self).__init__()
-        self.focal = FocalLoss(gamma=focal_alpha)
+        self.focal = FocalLoss(gamma=focal_gamma)
         self.smooth_l1 = nn.SmoothL1Loss(reduction="sum")
 
         self.lambda_conf = lambda_conf
@@ -119,10 +119,6 @@ class LossAll(nn.Module):
         # Confidence: Focal loss on the confidence map
         conf_pred = preds[:, 0:1, :, :]
         conf_gt = gt_tensor[:, 0:1, :, :]
-        print("here",preds[0, :, 1, 87])
-        print("here",gt_tensor[0, :, 1, 87])
-        print("here",preds[0, :, 2, 87])
-        print("here",gt_tensor[0, :, 2, 87])
         loss_conf = self.focal(conf_pred, conf_gt)
 
         # --- Regression Loss (Center & WH) ---

@@ -62,7 +62,7 @@ class TrainModule(object):
 
     def train_network(self, args):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=args.init_lr)
-        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.96)
+        self.scheduler = torch.optim.lr_scheduler.ExponentialLR(self.optimizer, gamma=0.9999)
         
         # NOTE: You might need to update this path logic if args.dataset is not available
         # For now, let's create a generic 'weights' folder
@@ -120,13 +120,6 @@ class TrainModule(object):
                     self.model,
                     self.optimizer
                 )
-
-            self.save_model(
-                os.path.join(save_path, f"model_{epoch}.pth"),
-                epoch,
-                self.model,
-                self.optimizer
-            )
 
     def run_epoch(self, loader, criterion):
         self.model.train()

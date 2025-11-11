@@ -20,8 +20,6 @@ class DecoderV1(torch.nn.Module):
             pred = preds[b]
             score_map = pred[0]
             box_map = pred[1:3]
-            print(score_map.max())
-            print(box_map[:, 1, 87])
 
             scores = score_map.reshape(-1)
             widths = box_map[0].reshape(-1)
@@ -51,11 +49,11 @@ class DecoderV1(torch.nn.Module):
             half_h = heights * 0.5
 
             # convert (x_center, y_center, height, width) -> (x1, y1, x2, y2)
-            x1 = centers[:, 0] - half_w
-            y1 = centers[:, 1] - half_h
-            x2 = centers[:, 0] + half_w
-            y2 = centers[:, 1] + half_h
-            boxes = torch.stack((x1, y1, x2, y2), dim=1)
+            x1 = (centers[:, 0] - half_w)
+            y1 = (centers[:, 1] - half_h)
+            x2 = (centers[:, 0] + half_w)
+            y2 = (centers[:, 1] + half_h)
+            boxes = torch.stack((x1, y1, x2, y2), dim=1) * 4.0
 
             # topk
             if self.topk > 0 and scores.numel() > self.topk:

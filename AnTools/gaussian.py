@@ -67,7 +67,7 @@ def main() -> None:
     heatmap_height = 144
     heatmap_width = 256
     center = [1, 87]
-    min_overlap = 0.2
+    min_overlap = 0.3
     box = [3, 15]
     scale = 1
 
@@ -76,7 +76,6 @@ def main() -> None:
     radius = calculate_gaussian_radius(box[0], box[1], min_overlap)
 
     apply_gaussian(heatmap, center[1], center[0], radius, scale=scale)
-    print(np.max(heatmap))
 
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.imshow(heatmap, cmap="hot", interpolation="nearest")
